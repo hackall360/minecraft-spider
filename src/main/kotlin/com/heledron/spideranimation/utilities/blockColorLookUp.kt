@@ -2,6 +2,8 @@ package com.heledron.spideranimation.utilities
 
 import com.google.gson.Gson
 import com.heledron.spideranimation.SpiderAnimationMod
+import net.minecraft.resources.ResourceLocation
+import net.minecraftforge.server.ServerLifecycleHooks
 import org.bukkit.Color
 import org.bukkit.Material
 import org.bukkit.block.data.BlockData
@@ -22,72 +24,78 @@ private fun String.parseJSONColors(): Map<Material, Color> {
     return colorMap
 }
 
-private val blocks = SpiderAnimationMod::class.java.getResourceAsStream("/block_colors.json")
-    ?.bufferedReader()
-    ?.use { it.readText() }
-    ?.parseJSONColors()
-    ?: throw IllegalStateException("Failed to load block_colors.json")
+private val blocks: Map<Material, Color> by lazy {
+    val resourceManager = ServerLifecycleHooks.getCurrentServer().resourceManager
+    val resource = resourceManager
+        .getResource(ResourceLocation(SpiderAnimationMod.MOD_ID, "block_colors.json"))
+        .orElseThrow { IllegalStateException("Failed to load block_colors.json") }
 
-private val blocksWithBrightness = mutableMapOf<Color, Pair<Material,Int>>().apply {
-    for (brightness in 15 downTo 0) {
-        for ((material, color) in blocks) {
-            if (!material.isOccluding) continue
+    resource.open().reader().use { it.readText().parseJSONColors() }
+}
 
-            val newColor = color.withBrightness(brightness)
+private val blocksWithBrightness: Map<Color, Pair<Material, Int>> by lazy {
+    mutableMapOf<Color, Pair<Material, Int>>().apply {
+        for (brightness in 15 downTo 0) {
+            for ((material, color) in blocks) {
+                if (!material.isOccluding) continue
 
-            if (newColor in this) continue
+                val newColor = color.withBrightness(brightness)
 
-            this[newColor] = material to brightness
+                if (newColor in this) continue
+
+                this[newColor] = material to brightness
+            }
         }
-    }
 
+        for ((color, material) in this) {
+            val id = material.first.key.toString()
 
-    for ((color, material) in this) {
-        val id = material.first.key.toString()
-
-        // replace log with wood
-        if (id.endsWith("_log")) {
-            val woodMaterial = Material.matchMaterial(id.replaceEnd("_log", "_wood")) ?: continue
-            this[color] = woodMaterial to material.second
+            // replace log with wood
+            if (id.endsWith("_log")) {
+                val woodMaterial = Material.matchMaterial(id.replaceEnd("_log", "_wood")) ?: continue
+                this[color] = woodMaterial to material.second
+            }
         }
     }
 }
 
-private val blockToColor = blocks.toMutableMap().apply {
-    this[Material.GRASS_BLOCK] = this[Material.MOSS_BLOCK]!!
-    this[Material.MOSS_CARPET] = this[Material.MOSS_BLOCK]!!
-    this[Material.OAK_LEAVES] = this[Material.MOSS_BLOCK]!!
+private val blockToColor: Map<Material, Color> by lazy {
+    blocks.toMutableMap().apply {
+        this[Material.GRASS_BLOCK] = this[Material.MOSS_BLOCK]!!
+        this[Material.MOSS_CARPET] = this[Material.MOSS_BLOCK]!!
+        this[Material.OAK_LEAVES] = this[Material.MOSS_BLOCK]!!
 
-    this[Material.WARPED_TRAPDOOR] = this[Material.WARPED_PLANKS]!!
+        this[Material.WARPED_TRAPDOOR] = this[Material.WARPED_PLANKS]!!
 
-    this[Material.BARREL] = this[Material.SPRUCE_PLANKS]!!
+        this[Material.BARREL] = this[Material.SPRUCE_PLANKS]!!
 
-    // replace partial blocks with their full block counterparts
-    for (material in Material.entries) {
-        if (!material.isBlock) continue
-        val id = material.key.toString()
+        // replace partial blocks with their full block counterparts
+        for (material in Material.entries) {
+            if (!material.isBlock) continue
+            val id = material.key.toString()
 
-        if (this.containsKey(material)) continue
+            if (this.containsKey(material)) continue
 
-        val fullBlockName = id
-            .replaceEnd("_slab", "")
-            .replaceEnd("_stairs", "")
-            .replaceEnd("_wall", "")
-            .replaceEnd("_trapdoor", "")
-            .replace("waxed_", "")
+            val fullBlockName = id
+                .replaceEnd("_slab", "")
+                .replaceEnd("_stairs", "")
+                .replaceEnd("_wall", "")
+                .replaceEnd("_trapdoor", "")
+                .replace("waxed_", "")
 
-        if (fullBlockName == id) continue
+            if (fullBlockName == id) continue
 
-        val fullBlockMaterial =
-            Material.matchMaterial(fullBlockName + "_planks") ?:
-            Material.matchMaterial(fullBlockName) ?:
-            Material.matchMaterial(fullBlockName + "s") ?:
-            Material.matchMaterial(fullBlockName + "_wood")
+            val fullBlockMaterial =
+                Material.matchMaterial(fullBlockName + "_planks") ?:
+                Material.matchMaterial(fullBlockName) ?:
+                Material.matchMaterial(fullBlockName + "s") ?:
+                Material.matchMaterial(fullBlockName + "_wood")
 
-        this[material] = this[fullBlockMaterial] ?: continue
+            this[material] = this[fullBlockMaterial] ?: continue
+        }
+
+        this[Material.CAMPFIRE] = this[Material.OAK_LOG]!!
     }
-
-    this[Material.CAMPFIRE] = this[Material.OAK_LOG]!!
 }
 
 fun getColorFromBlock(block: BlockData): Color? {
