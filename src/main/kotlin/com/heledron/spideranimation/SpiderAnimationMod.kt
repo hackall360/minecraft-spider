@@ -7,6 +7,7 @@ import com.heledron.spideranimation.utilities.AppState
 import com.heledron.spideranimation.registerItems
 import com.heledron.spideranimation.registerCommands
 import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.EntityJoinLevelEvent
 import net.minecraftforge.event.server.ServerStartingEvent
@@ -41,7 +42,6 @@ class SpiderAnimationMod {
             AppState.chainVisualizer?.close()
             AppState.renderer.close()
         }
-        registerCommands()
     }
 
     @SubscribeEvent
@@ -49,6 +49,11 @@ class SpiderAnimationMod {
         LOGGER.info("Disabling Spider Animation mod")
         closeables.forEach { it.close() }
         AppState.closeables.forEach { it.close() }
+    }
+
+    @SubscribeEvent
+    fun onRegisterCommands(event: RegisterCommandsEvent) {
+        registerCommands(event)
     }
 
     @SubscribeEvent
