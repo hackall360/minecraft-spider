@@ -1,7 +1,9 @@
 package com.heledron.spideranimation.utilities
 
-import com.heledron.spideranimation.SpiderAnimationPlugin
 import net.md_5.bungee.api.ChatMessageType
+import net.minecraftforge.event.TickEvent
+import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.common.Mod
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.FluidCollisionMode
@@ -15,57 +17,76 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.util.RayTraceResult
 import org.bukkit.util.Transformation
 import org.bukkit.util.Vector
 import org.joml.*
 import java.io.Closeable
+import java.util.concurrent.CopyOnWriteArrayList
 
-lateinit var currentPlugin: JavaPlugin
+@Mod.EventBusSubscriber(modid = com.heledron.spideranimation.SpiderAnimationMod.MOD_ID)
+object Scheduler {
+    private data class Task(var delay: Long, val period: Long, val action: (Closeable) -> Unit) {
+        var cancelled = false
+        val handle: Closeable = Closeable { cancelled = true }
+    }
 
-fun runLater(delay: Long, task: () -> Unit): Closeable {
-    val plugin = currentPlugin
-    val handler = plugin.server.scheduler.runTaskLater(plugin, task, delay)
-    return Closeable {
-        handler.cancel()
+    private val tasks = CopyOnWriteArrayList<Task>()
+
+    fun runLater(delay: Long, task: () -> Unit): Closeable {
+        val t = Task(delay, 0) { task() }
+        tasks += t
+        return t.handle
+    }
+
+    fun interval(delay: Long, period: Long, task: (Closeable) -> Unit): Closeable {
+        val t = Task(delay, period, task)
+        tasks += t
+        return t.handle
+    }
+
+    fun onTick(task: (Closeable) -> Unit): Closeable = interval(0, 1, task)
+
+    @SubscribeEvent
+    fun onServerTick(event: TickEvent.ServerTickEvent) {
+        if (event.phase != TickEvent.Phase.END) return
+        val iterator = tasks.iterator()
+        while (iterator.hasNext()) {
+            val t = iterator.next()
+            if (t.cancelled) {
+                iterator.remove()
+                continue
+            }
+            if (t.delay > 0) {
+                t.delay--
+                continue
+            }
+            t.action(t.handle)
+            if (t.cancelled || t.period <= 0) {
+                iterator.remove()
+            } else {
+                t.delay = t.period
+            }
+        }
     }
 }
 
-fun interval(delay: Long, period: Long, task: (it: Closeable) -> Unit): Closeable {
-    val plugin = currentPlugin
-    lateinit var handler: org.bukkit.scheduler.BukkitTask
-    val closeable = Closeable { handler.cancel() }
-    handler = plugin.server.scheduler.runTaskTimer(plugin, Runnable { task(closeable) }, delay, period)
-    return closeable
+fun runLater(delay: Long, task: () -> Unit): Closeable = Scheduler.runLater(delay, task)
+
+fun interval(delay: Long, period: Long, task: (Closeable) -> Unit): Closeable = Scheduler.interval(delay, period, task)
+
+fun onTick(task: (Closeable) -> Unit): Closeable = Scheduler.onTick(task)
+
+fun addEventListener(@Suppress("UNUSED_PARAMETER") listener: Listener): Closeable {
+    return Closeable { }
 }
 
-fun onTick(task: (it: Closeable) -> Unit) = interval(0, 1, task)
-
-fun addEventListener(listener: Listener): Closeable {
-    val plugin = currentPlugin
-    plugin.server.pluginManager.registerEvents(listener, plugin)
-    return Closeable {
-        org.bukkit.event.HandlerList.unregisterAll(listener)
-    }
+fun onInteractEntity(@Suppress("UNUSED_PARAMETER") listener: (Player, Entity, EquipmentSlot) -> Unit): Closeable {
+    return Closeable { }
 }
 
-fun onInteractEntity(listener: (Player, Entity, EquipmentSlot) -> Unit): Closeable {
-    return addEventListener(object : Listener {
-        @org.bukkit.event.EventHandler
-        fun onInteract(event: org.bukkit.event.player.PlayerInteractEntityEvent) {
-            listener(event.player, event.rightClicked, event.hand)
-        }
-    })
-}
-
-fun onSpawnEntity(listener: (Entity, World) -> Unit): Closeable {
-    return addEventListener(object : Listener {
-        @org.bukkit.event.EventHandler
-        fun onSpawn(event: org.bukkit.event.entity.EntitySpawnEvent) {
-            listener(event.entity, event.entity.world)
-        }
-    })
+fun onSpawnEntity(@Suppress("UNUSED_PARAMETER") listener: (Entity, World) -> Unit): Closeable {
+    return Closeable { }
 }
 
 
@@ -81,15 +102,8 @@ fun runCommandSilently(command: String, location: Location = Bukkit.getWorlds().
     server.dispatchCommand(commandBlockMinecart, command)
 }
 
-fun onGestureUseItem(listener: (Player, ItemStack) -> Unit): Closeable {
-    return addEventListener(object : Listener {
-        @org.bukkit.event.EventHandler
-        fun onPlayerInteract(event: org.bukkit.event.player.PlayerInteractEvent) {
-            if (event.action != Action.RIGHT_CLICK_AIR && event.action != Action.RIGHT_CLICK_BLOCK) return
-            if (event.action == Action.RIGHT_CLICK_BLOCK && !(event.clickedBlock?.type?.isInteractable == false || event.player.isSneaking)) return
-            listener(event.player, event.item ?: return)
-        }
-    })
+fun onGestureUseItem(@Suppress("UNUSED_PARAMETER") listener: (Player, ItemStack) -> Unit): Closeable {
+    return Closeable { }
 }
 
 
