@@ -6,9 +6,8 @@ import com.heledron.spideranimation.spider.configuration.SpiderOptions
 import com.heledron.spideranimation.spider.misc.*
 import com.heledron.spideranimation.spider.rendering.SpiderRenderer
 import com.heledron.spideranimation.utilities.*
-import org.bukkit.Location
-import org.bukkit.World
-import org.bukkit.util.Vector
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.Vec3
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import java.io.Closeable
@@ -20,28 +19,18 @@ interface SpiderComponent : Closeable {
 }
 
 class Spider(
-    val world: World,
-    val position: Vector,
-    val orientation: Quaternionf,
+    val world: Level,
+    var position: Vec3,
+    var orientation: Quaternionf,
     val options: SpiderOptions
 ): Closeable {
     companion object {
-        fun fromLocation(location: Location, options: SpiderOptions): Spider {
-            val world = location.world!!
-            val position = location.toVector()
-            val orientation = Quaternionf().rotationYXZ(location.yawRadians(), location.pitchRadians(), 0f)
-            return Spider(world, position, orientation, options)
+        fun fromPosition(level: Level, position: Vec3, orientation: Quaternionf, options: SpiderOptions): Spider {
+            return Spider(level, position, orientation, options)
         }
     }
 
-    // utils
-    fun location(): Location {
-        val location = position.toLocation(world)
-        location.direction = forwardDirection()
-        return location
-    }
-
-    fun forwardDirection() = FORWARD_VECTOR.rotate(orientation)
+    fun forwardDirection(): Vec3 = FORWARD_VECTOR.rotate(orientation)
 
     val gait get() = if (gallop) options.gallopGait else options.walkGait
 
@@ -97,11 +86,9 @@ class Spider(
         getComponents().forEach { it.close() }
     }
 
-    fun teleport(newLocation: Location) {
-        val diff = newLocation.toVector().subtract(position)
-
-        position.copy(newLocation.toVector())
-        for (leg in body.legs) leg.endEffector.add(diff)
+    fun teleport(newPosition: Vec3) {
+        position = newPosition
+        // TODO update leg positions for new coordinate system
     }
 
     fun getComponents() = iterator<SpiderComponent> {
