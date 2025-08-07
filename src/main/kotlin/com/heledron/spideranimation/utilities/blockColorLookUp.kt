@@ -1,6 +1,7 @@
 package com.heledron.spideranimation.utilities
 
 import com.google.gson.Gson
+import com.heledron.spideranimation.SpiderAnimationMod
 import org.bukkit.Color
 import org.bukkit.Material
 import org.bukkit.block.data.BlockData
@@ -21,7 +22,7 @@ private fun String.parseJSONColors(): Map<Material, Color> {
     return colorMap
 }
 
-private val blocks = currentPlugin.getResource("block_colors.json")
+private val blocks = SpiderAnimationMod::class.java.getResourceAsStream("/block_colors.json")
     ?.bufferedReader()
     ?.use { it.readText() }
     ?.parseJSONColors()

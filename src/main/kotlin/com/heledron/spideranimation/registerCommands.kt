@@ -12,6 +12,7 @@ import com.heledron.spideranimation.utilities.BlockDisplayModelPiece
 import com.heledron.spideranimation.utilities.CustomItemRegistry
 import com.heledron.spideranimation.utilities.Serializer
 import com.heledron.spideranimation.utilities.runLater
+import org.bukkit.Bukkit
 import org.bukkit.Bukkit.createInventory
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -23,8 +24,8 @@ import org.bukkit.entity.Display
 import org.bukkit.entity.Display.Brightness
 import org.bukkit.entity.Player
 
-fun registerCommands(plugin: SpiderAnimationPlugin) {
-    fun getCommand(name: String) = plugin.getCommand(name) ?: throw Exception("Command $name not found")
+fun registerCommands() {
+    fun getCommand(name: String) = Bukkit.getPluginCommand(name) ?: throw Exception("Command $name not found")
 
     getCommand("options").apply {
         val options = mapOf(

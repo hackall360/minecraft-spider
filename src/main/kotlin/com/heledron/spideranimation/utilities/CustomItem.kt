@@ -1,6 +1,5 @@
 package com.heledron.spideranimation.utilities
 
-import com.heledron.spideranimation.SpiderAnimationPlugin
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.NamespacedKey
@@ -9,7 +8,6 @@ import org.bukkit.event.block.Action
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
-import org.bukkit.plugin.Plugin
 
 class CustomItem(
     val id: String,
@@ -32,7 +30,7 @@ class CustomItem(
 
 
 object CustomItemRegistry {
-    val ID_KEY; get () = NamespacedKey(currentPlugin, "item_id")
+    val ID_KEY; get () = NamespacedKey("spideranimation", "item_id")
 
     val items = mutableListOf<CustomItem>()
 
