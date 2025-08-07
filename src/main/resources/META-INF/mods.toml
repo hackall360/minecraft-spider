@@ -1,0 +1,12 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+[[mods]]
+modId="spideranimation"
+version="3.0"
+displayName="Spider Animation"
+credits=""
+authors="Heledron"
+description='''
+Spider animation mod.
+'''
