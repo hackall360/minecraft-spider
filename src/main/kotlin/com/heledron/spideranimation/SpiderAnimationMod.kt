@@ -4,7 +4,7 @@ import com.heledron.spideranimation.kinematic_chain_visualizer.KinematicChainVis
 import com.heledron.spideranimation.spider.misc.StayStillBehaviour
 import com.heledron.spideranimation.spider.rendering.targetRenderEntity
 import com.heledron.spideranimation.utilities.AppState
-import com.heledron.spideranimation.registerItems
+import com.heledron.spideranimation.ModItems
 import com.heledron.spideranimation.registerCommands
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.RegisterCommandsEvent
@@ -24,15 +24,15 @@ import java.io.Closeable
 @Mod(SpiderAnimationMod.MOD_ID)
 class SpiderAnimationMod {
     init {
-        FMLJavaModLoadingContext.get().modEventBus.addListener(this::commonSetup)
+        val bus = FMLJavaModLoadingContext.get().modEventBus
+        bus.addListener(this::commonSetup)
+        ModItems.ITEMS.register(bus)
         MinecraftForge.EVENT_BUS.register(this)
     }
 
     private val closeables = mutableListOf<Closeable>()
 
-    private fun commonSetup(event: FMLCommonSetupEvent) {
-        registerItems()
-    }
+    private fun commonSetup(event: FMLCommonSetupEvent) { }
 
     @SubscribeEvent
     fun onServerStarting(event: ServerStartingEvent) {
