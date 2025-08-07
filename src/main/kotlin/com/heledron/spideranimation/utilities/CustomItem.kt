@@ -44,7 +44,7 @@ object CustomItemRegistry {
             if (customItem.isItem(item)) customItem.onRightClick?.invoke(player)
         }
 
-        onTick {
+        onServerTick {
             for (player in Bukkit.getServer().onlinePlayers) {
                 get(player.inventory.itemInMainHand)?.onHeldTick?.invoke(player)
                 get(player.inventory.itemInOffHand)?.onHeldTick?.invoke(player)

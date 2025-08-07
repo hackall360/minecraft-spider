@@ -1,7 +1,9 @@
 package com.heledron.spideranimation.utilities
 
 import net.md_5.bungee.api.ChatMessageType
+import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
+import net.minecraftforge.event.entity.EntityJoinLevelEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import org.bukkit.Bukkit
@@ -26,30 +28,30 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 @Mod.EventBusSubscriber(modid = com.heledron.spideranimation.SpiderAnimationMod.MOD_ID)
 object Scheduler {
-    private data class Task(var delay: Long, val period: Long, val action: (Closeable) -> Unit) {
+    private data class Task(var runAt: Long, val period: Long, val action: (Closeable) -> Unit) {
         var cancelled = false
         val handle: Closeable = Closeable { cancelled = true }
     }
 
     private val tasks = CopyOnWriteArrayList<Task>()
+    private var tick = 0L
 
     fun runLater(delay: Long, task: () -> Unit): Closeable {
-        val t = Task(delay, 0) { task() }
+        val t = Task(tick + delay, 0) { task() }
         tasks += t
         return t.handle
     }
 
     fun interval(delay: Long, period: Long, task: (Closeable) -> Unit): Closeable {
-        val t = Task(delay, period, task)
+        val t = Task(tick + delay, period, task)
         tasks += t
         return t.handle
     }
 
-    fun onTick(task: (Closeable) -> Unit): Closeable = interval(0, 1, task)
-
     @SubscribeEvent
     fun onServerTick(event: TickEvent.ServerTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
+        tick++
         val iterator = tasks.iterator()
         while (iterator.hasNext()) {
             val t = iterator.next()
@@ -57,15 +59,12 @@ object Scheduler {
                 iterator.remove()
                 continue
             }
-            if (t.delay > 0) {
-                t.delay--
-                continue
-            }
+            if (tick < t.runAt) continue
             t.action(t.handle)
             if (t.cancelled || t.period <= 0) {
                 iterator.remove()
             } else {
-                t.delay = t.period
+                t.runAt = tick + t.period
             }
         }
     }
@@ -75,7 +74,19 @@ fun runLater(delay: Long, task: () -> Unit): Closeable = Scheduler.runLater(dela
 
 fun interval(delay: Long, period: Long, task: (Closeable) -> Unit): Closeable = Scheduler.interval(delay, period, task)
 
-fun onTick(task: (Closeable) -> Unit): Closeable = Scheduler.onTick(task)
+fun onServerTick(task: (Closeable) -> Unit): Closeable {
+    lateinit var handle: Closeable
+    val listener = object {
+        @SubscribeEvent
+        fun tick(event: TickEvent.ServerTickEvent) {
+            if (event.phase != TickEvent.Phase.END) return
+            task(handle)
+        }
+    }
+    handle = Closeable { MinecraftForge.EVENT_BUS.unregister(listener) }
+    MinecraftForge.EVENT_BUS.register(listener)
+    return handle
+}
 
 fun addEventListener(@Suppress("UNUSED_PARAMETER") listener: Listener): Closeable {
     return Closeable { }
@@ -85,8 +96,18 @@ fun onInteractEntity(@Suppress("UNUSED_PARAMETER") listener: (Player, Entity, Eq
     return Closeable { }
 }
 
-fun onSpawnEntity(@Suppress("UNUSED_PARAMETER") listener: (Entity, World) -> Unit): Closeable {
-    return Closeable { }
+fun onSpawnEntity(listener: (Entity, World) -> Unit): Closeable {
+    val handler = object {
+        @SubscribeEvent
+        fun handle(event: EntityJoinLevelEvent) {
+            val worldName = event.level.dimension().location().path
+            val bukkitWorld = Bukkit.getWorld(worldName) ?: return
+            val bukkitEntity = event.entity.bukkitEntity
+            listener(bukkitEntity, bukkitWorld)
+        }
+    }
+    MinecraftForge.EVENT_BUS.register(handler)
+    return Closeable { MinecraftForge.EVENT_BUS.unregister(handler) }
 }
 
 
