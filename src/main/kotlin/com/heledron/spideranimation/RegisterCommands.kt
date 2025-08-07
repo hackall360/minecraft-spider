@@ -31,6 +31,7 @@ fun registerCommands(event: RegisterCommandsEvent) {
 private fun registerScale(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         Commands.literal("scale")
+            .requires { it.hasPermission(2) }
             .then(
                 Commands.argument("scale", DoubleArgumentType.doubleArg())
                     .executes { ctx ->
@@ -58,6 +59,7 @@ private fun registerPreset(dispatcher: CommandDispatcher<CommandSourceStack>) {
 
     dispatcher.register(
         Commands.literal("preset")
+            .requires { it.hasPermission(2) }
             .then(
                 Commands.argument("name", StringArgumentType.word())
                     .suggests { _, builder ->
@@ -112,6 +114,7 @@ private fun applyPreset(
 private fun registerFall(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         Commands.literal("fall")
+            .requires { it.hasPermission(2) }
             .then(
                 Commands.argument("height", DoubleArgumentType.doubleArg())
                     .executes { ctx ->
@@ -127,6 +130,7 @@ private fun registerFall(dispatcher: CommandDispatcher<CommandSourceStack>) {
 private fun registerSplay(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         Commands.literal("splay")
+            .requires { it.hasPermission(2) }
             .then(
                 Commands.argument("delay", IntegerArgumentType.integer(0))
                     .executes { ctx ->

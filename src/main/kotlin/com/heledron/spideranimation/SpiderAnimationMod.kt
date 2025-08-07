@@ -13,7 +13,9 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent
 import net.minecraftforge.event.server.ServerStartingEvent
 import net.minecraftforge.event.server.ServerStoppingEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.ModLoadingContext
 import net.minecraftforge.fml.common.Mod
+import net.minecraftforge.fml.config.ModConfig
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 import org.apache.logging.log4j.LogManager
@@ -26,6 +28,7 @@ class SpiderAnimationMod {
     init {
         val bus = FMLJavaModLoadingContext.get().modEventBus
         bus.addListener(this::commonSetup)
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SpiderConfig.SPEC)
         ModItems.ITEMS.register(bus)
         MinecraftForge.EVENT_BUS.register(this)
     }

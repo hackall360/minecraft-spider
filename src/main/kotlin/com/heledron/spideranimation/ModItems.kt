@@ -86,6 +86,8 @@ class ToggleDebugItem(properties: Properties) : Item(properties) {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         AppState.showDebugVisuals = !AppState.showDebugVisuals
+        SpiderConfig.SHOW_DEBUG.set(AppState.showDebugVisuals)
+        SpiderConfig.save()
         AppState.chainVisualizer?.detailed = AppState.showDebugVisuals
         val pitch = if (AppState.showDebugVisuals) 2.0f else 1.5f
         playSound(bukkitPlayer.location, Sound.BLOCK_DISPENSER_FAIL, 1.0f, pitch)
@@ -146,6 +148,8 @@ class SwitchGaitItem(properties: Properties) : Item(properties) {
         val bukkitPlayer = toBukkit(player)
         playSound(bukkitPlayer.location, Sound.BLOCK_DISPENSER_FAIL, 1.0f, 2.0f)
         AppState.gallop = !AppState.gallop
+        SpiderConfig.GALLOP.set(AppState.gallop)
+        SpiderConfig.save()
         sendActionBar(bukkitPlayer, if (!AppState.gallop) "Walk mode" else "Gallop mode")
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide)
     }
