@@ -59,8 +59,8 @@ class Mountable(val spider: Spider): SpiderComponent {
             }
         })
 
-        closable += onTick {
-            val player = getRider() ?: return@onTick
+        closable += onServerTick {
+            val player = getRider() ?: return@onServerTick
 
             val input = Vector()
             if (player.currentInput.isLeft) input.x += 1.0
