@@ -1,28 +1,22 @@
 package com.heledron.spideranimation.utilities
 
-import net.md_5.bungee.api.ChatMessageType
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.entity.EntityJoinLevelEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import org.bukkit.Bukkit
-import org.bukkit.ChatColor
-import org.bukkit.FluidCollisionMode
-import org.bukkit.Location
-import org.bukkit.World
-import org.bukkit.entity.Display
-import org.bukkit.entity.Entity
-import org.bukkit.entity.Player
-import org.bukkit.entity.minecart.CommandMinecart
-import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
-import org.bukkit.inventory.EquipmentSlot
-import org.bukkit.inventory.ItemStack
-import org.bukkit.util.RayTraceResult
-import org.bukkit.util.Transformation
-import org.bukkit.util.Vector
-import org.joml.*
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.ClipContext
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.HitResult
+import net.minecraft.world.phys.Vec3
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
+import net.minecraft.core.particles.ParticleOptions
+import org.joml.Matrix4f
+import org.joml.Quaternionf
+import org.joml.Vector3f
 import java.io.Closeable
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -88,144 +82,63 @@ fun onServerTick(task: (Closeable) -> Unit): Closeable {
     return handle
 }
 
-fun addEventListener(@Suppress("UNUSED_PARAMETER") listener: Listener): Closeable {
-    return Closeable { }
+fun raycastGround(level: Level, origin: Vec3, direction: Vec3, maxDistance: Double): BlockHitResult? {
+    val end = origin.add(direction.normalize().scale(maxDistance))
+    val context = ClipContext(origin, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, null)
+    val result = level.clip(context)
+    return if (result.type == HitResult.Type.MISS) null else result
 }
 
-fun onInteractEntity(@Suppress("UNUSED_PARAMETER") listener: (Player, Entity, EquipmentSlot) -> Unit): Closeable {
-    return Closeable { }
+fun Level.raycastGround(position: Vec3, direction: Vec3, maxDistance: Double): BlockHitResult? =
+    raycastGround(this, position, direction, maxDistance)
+
+fun Level.isOnGround(position: Vec3, downVector: Vec3 = Vec3(0.0, -1.0, 0.0)): Boolean =
+    raycastGround(position, downVector, 0.001) != null
+
+data class CollisionResult(val position: Vec3, val offset: Vec3)
+
+fun resolveCollision(level: Level, position: Vec3, direction: Vec3): CollisionResult? {
+    val start = position.subtract(direction)
+    val end = position
+    val context = ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, null)
+    val result = level.clip(context)
+    return if (result.type == HitResult.Type.MISS) null else CollisionResult(result.location, result.location.subtract(position))
 }
 
-fun onSpawnEntity(listener: (Entity, World) -> Unit): Closeable {
-    val handler = object {
-        @SubscribeEvent
-        fun handle(event: EntityJoinLevelEvent) {
-            val worldName = event.level.dimension().location().path
-            val bukkitWorld = Bukkit.getWorld(worldName) ?: return
-            val bukkitEntity = event.entity.bukkitEntity
-            listener(bukkitEntity, bukkitWorld)
-        }
-    }
-    MinecraftForge.EVENT_BUS.register(handler)
-    return Closeable { MinecraftForge.EVENT_BUS.unregister(handler) }
+fun Level.resolveCollision(position: Vec3, direction: Vec3): CollisionResult? =
+    resolveCollision(this, position, direction)
+
+fun playSound(level: Level, position: Vec3, sound: SoundEvent, volume: Float, pitch: Float) {
+    level.playSound(null, position.x, position.y, position.z, sound, SoundSource.BLOCKS, volume, pitch)
 }
 
-
-private var commandBlockMinecart: CommandMinecart? = null
-fun runCommandSilently(command: String, location: Location = Bukkit.getWorlds().first().spawnLocation) {
-    val server = Bukkit.getServer()
-
-    val commandBlockMinecart = commandBlockMinecart ?: spawnEntity(location, CommandMinecart::class.java) {
-        commandBlockMinecart = it
-        it.remove()
-    }
-
-    server.dispatchCommand(commandBlockMinecart, command)
+fun <T : Entity> spawnEntity(level: Level, position: Vec3, type: EntityType<T>, initializer: (T) -> Unit): T {
+    val entity = type.create(level) ?: throw IllegalArgumentException("Cannot create entity")
+    entity.moveTo(position.x, position.y, position.z, entity.yRot, entity.xRot)
+    initializer(entity)
+    level.addFreshEntity(entity)
+    return entity
 }
 
-fun onGestureUseItem(@Suppress("UNUSED_PARAMETER") listener: (Player, ItemStack) -> Unit): Closeable {
-    return Closeable { }
-}
-
-
-class SeriesScheduler {
-    var time = 0L
-
-    fun sleep(time: Long) {
-        this.time += time
-    }
-
-    fun run(task: () -> Unit) {
-        runLater(time, task)
+fun spawnParticle(level: Level, particle: ParticleOptions, position: Vec3, count: Int,
+                   offsetX: Double, offsetY: Double, offsetZ: Double, speed: Double) {
+    for (i in 0 until count) {
+        level.addParticle(particle, position.x, position.y, position.z, offsetX, offsetY, offsetZ)
     }
 }
 
-class EventEmitter {
-    private val listeners = mutableListOf<() -> Unit>()
-    fun listen(listener: () -> Unit): Closeable {
-        listeners.add(listener)
-        return Closeable { listeners.remove(listener) }
-    }
-
-    fun emit() {
-        for (listener in listeners) listener()
-    }
+fun lookingAtPoint(eye: Vec3, direction: Vec3, point: Vec3, tolerance: Double): Boolean {
+    val pointDistance = eye.distanceTo(point)
+    val lookingAtPoint = eye.add(direction.normalize().scale(pointDistance))
+    return lookingAtPoint.distanceTo(point) < tolerance
 }
 
-fun firstPlayer(): Player? {
-    return Bukkit.getOnlinePlayers().firstOrNull()
-}
-
-fun sendDebugMessage(message: String) {
-    sendActionBar(firstPlayer() ?: return, message)
-}
-
-fun sendActionBar(player: Player, message: String) {
-//    player.sendActionBar(message)
-    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, net.md_5.bungee.api.chat.TextComponent(message))
-}
-
-fun raycastGround(location: Location, direction: Vector, maxDistance: Double): RayTraceResult? {
-    return location.world!!.rayTraceBlocks(location, direction, maxDistance, FluidCollisionMode.NEVER, true)
-}
-
-fun World.raycastGround(position: Vector, direction: Vector, maxDistance: Double): RayTraceResult? {
-    return raycastGround(position.toLocation(this), direction, maxDistance)
-}
-
-fun World.isOnGround(position: Vector, downVector: Vector = DOWN_VECTOR): Boolean {
-    return raycastGround(position.toLocation(this), downVector, 0.001) != null
-}
-
-data class CollisionResult(val position: Vector, val offset: Vector)
-
-fun resolveCollision(location: Location, direction: Vector): CollisionResult? {
-    val ray = location.world!!.rayTraceBlocks(location.clone().subtract(direction), direction, direction.length(), FluidCollisionMode.NEVER, true)
-    if (ray != null) {
-        val newLocation = ray.hitPosition.toLocation(location.world!!)
-        return CollisionResult(newLocation.toVector(), ray.hitPosition.subtract(location.toVector()))
-    }
-
-    return null
-}
-
-fun World.resolveCollision(position: Vector, direction: Vector): CollisionResult? {
-    return resolveCollision(position.toLocation(this), direction)
-}
-
-fun playSound(location: Location, sound: org.bukkit.Sound, volume: Float, pitch: Float) {
-    location.world!!.playSound(location, sound, volume, pitch)
-}
-
-fun World.playSound(position: Vector, sound: org.bukkit.Sound, volume: Float, pitch: Float) {
-    playSound(position.toLocation(this), sound, volume, pitch)
-}
-
-fun <T : Entity> spawnEntity(location: Location, clazz: Class<T>, initializer: (T) -> Unit): T {
-    return location.world!!.spawn(location, clazz, initializer)
-}
-
-fun spawnParticle(particle: org.bukkit.Particle, location: Location, count: Int, offsetX: Double, offsetY: Double, offsetZ: Double, extra: Double) {
-    location.world!!.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra)
-}
-
-fun <T> spawnParticle(particle: org.bukkit.Particle, location: Location, count: Int, offsetX: Double, offsetY: Double, offsetZ: Double, extra: Double, data: T) {
-    location.world!!.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra, data)
-}
-
-
-fun lookingAtPoint(eye: Vector, direction: Vector, point: Vector, tolerance: Double): Boolean {
-    val pointDistance = eye.distance(point)
-    val lookingAtPoint = eye.clone().add(direction.clone().multiply(pointDistance))
-    return lookingAtPoint.distance(point) < tolerance
-}
-
-fun centredTransform(xSize: Float, ySize: Float, zSize: Float): Transformation {
-    return Transformation(
+fun centredTransform(xSize: Float, ySize: Float, zSize: Float): org.joml.Transformation {
+    return org.joml.Transformation(
         Vector3f(-xSize / 2, -ySize / 2, -zSize / 2),
-        AxisAngle4f(0f, 0f, 0f, 1f),
+        Quaternionf(0f, 0f, 0f, 1f),
         Vector3f(xSize, ySize, zSize),
-        AxisAngle4f(0f, 0f, 0f, 1f)
+        Quaternionf(0f, 0f, 0f, 1f)
     )
 }
 
@@ -235,7 +148,7 @@ fun centeredMatrix(xSize: Float, ySize: Float, zSize: Float): Matrix4f {
         .translate(-.5f, -.5f, -.5f)
 }
 
-fun matrixFromTransform(transformation: Transformation): Matrix4f {
+fun matrixFromTransform(transformation: org.joml.Transformation): Matrix4f {
     val matrix = Matrix4f()
     matrix.translate(transformation.translation)
     matrix.rotate(transformation.leftRotation)
@@ -244,18 +157,15 @@ fun matrixFromTransform(transformation: Transformation): Matrix4f {
     return matrix
 }
 
-
-
-fun Display.applyTransformationWithInterpolation(transformation: Transformation) {
+fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(transformation: org.joml.Transformation) {
     if (this.transformation == transformation) return
     this.transformation = transformation
     this.interpolationDelay = 0
 }
 
-fun Display.applyTransformationWithInterpolation(matrix: Matrix4f) {
+fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(matrix: Matrix4f) {
     val oldTransform = this.transformation
-    setTransformationMatrix(matrix)
-
+    this.transformation = net.minecraft.util.Mth.quatFromXYZ(0f,0f,0f) // placeholder
     if (oldTransform == this.transformation) return
     this.interpolationDelay = 0
 }
