@@ -55,14 +55,11 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven("https://maven.minecraftforge.net")
-    maven("https://papermc.io/repo/repository/maven-public/")
-    maven("https://oss.sonatype.org/content/groups/public/")
 }
 
 dependencies {
     minecraft("net.minecraftforge:forge:1.20.1-47.3.0")
     implementation(kotlin("stdlib"))
-    compileOnly("org.spigotmc:spigot-api:1.21.3-R0.1-SNAPSHOT")
 }
 
 sourceSets.main.get().resources.srcDir("src/generated/resources")
