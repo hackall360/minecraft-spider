@@ -4,7 +4,9 @@ import com.heledron.spideranimation.kinematic_chain_visualizer.KinematicChainVis
 import com.heledron.spideranimation.spider.*
 import com.heledron.spideranimation.spider.presets.hexBot
 import com.heledron.spideranimation.utilities.MultiEntityRenderer
-import org.bukkit.Location
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.Vec3
+import org.joml.Quaternionf
 import java.io.Closeable
 
 object AppState {
@@ -24,7 +26,7 @@ object AppState {
         field = value
     }
 
-    var target: Location? = null
+    var target: Vec3? = null
 
     var chainVisualizer: KinematicChainVisualizer? = null
     set (value) {
@@ -32,16 +34,34 @@ object AppState {
         field = value
     }
 
-    fun createSpider(location: Location): Spider {
-        location.y += options.walkGait.stationary.bodyHeight
-        val spider = Spider.fromLocation(location, options)
+    /**
+     * Creates a new [Spider] in the given [level] at the specified [position].
+     *
+     * Using [ServerLevel] and [Vec3] keeps this API in terms of native Minecraft
+     * types instead of Bukkit wrappers. The supplied [position] should represent
+     * the ground location for the spider; this method adds the configured body
+     * height so the spider's body rests above the terrain.
+     *
+     * [orientation] is a quaternion describing the spider's rotation in world
+     * space. An identity quaternion leaves the spider upright and facing its
+     * default forward direction.
+     */
+    fun createSpider(level: ServerLevel, position: Vec3, orientation: Quaternionf = Quaternionf()): Spider {
+        val adjusted = position.add(0.0, options.walkGait.stationary.bodyHeight, 0.0)
+        val spider = Spider.fromPosition(level, adjusted, orientation, options)
         this.spider = spider
         return spider
     }
 
+    /**
+     * Rebuilds the current [spider] using its existing world, position and
+     * orientation. The same body height offset logic from [createSpider] is
+     * applied so the new instance appears at the correct elevation.
+     */
     fun recreateSpider() {
-        val location = this.spider?.location() ?: return
-        createSpider(location)
+        val spider = this.spider ?: return
+        val level = spider.world as? ServerLevel ?: return
+        createSpider(level, spider.position, spider.orientation)
     }
 }
 
