@@ -74,7 +74,9 @@ class SpiderAnimationMod {
         // Render target marker if one is set
         val target = if (AppState.miscOptions.showLaser) AppState.target else null
         if (target != null) {
-            // Target rendering removed pending Vec3 renderer implementation
+            // TODO: restore target rendering once a Vec3-based renderer is available.
+            // The previous renderer relied on Bukkit's Location type and was removed during
+            // the Vec3 migration, so no marker is drawn until a replacement exists.
         }
 
         AppState.renderer.flush()
