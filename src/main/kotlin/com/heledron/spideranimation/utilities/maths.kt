@@ -1,7 +1,7 @@
 package com.heledron.spideranimation.utilities
 
+import net.minecraft.world.phys.Vec3
 import org.bukkit.Location
-import org.bukkit.util.Vector
 import org.joml.*
 import java.lang.Math
 import kotlin.math.abs
@@ -27,15 +27,14 @@ fun Float.moveTowards(target: Float, speed: Float): Float {
     return if (abs(distance) < speed) target else this + speed * distance.sign
 }
 
-fun Vector.moveTowards(target: Vector, constant: Double): Vector {
-    val diff = target.clone().subtract(this)
+fun Vec3.moveTowards(target: Vec3, constant: Double): Vec3 {
+    val diff = target.subtract(this)
     val distance = diff.length()
-    if (distance <= constant) {
-        this.copy(target)
+    return if (distance <= constant) {
+        target
     } else {
-        this.add(diff.multiply(constant / distance))
+        this.add(diff.scale(constant / distance))
     }
-    return this
 }
 
 fun Vector3f.moveTowards(target: Vector3f, constant: Float): Vector3f {
@@ -49,38 +48,38 @@ fun Vector3f.moveTowards(target: Vector3f, constant: Float): Vector3f {
     return this
 }
 
-fun Vector.lerp(target: Vector, factor: Double): Vector {
-    this.add(target.clone().subtract(this).multiply(factor))
-    return this
+fun Vec3.lerp(target: Vec3, factor: Double): Vec3 {
+    return this.add(target.subtract(this).scale(factor))
 }
 
-fun Vector.copy(vec: Vector3d) {
-    this.x = vec.x
-    this.y = vec.y
-    this.z = vec.z
+fun Vec3.toVector3d(): Vector3d = Vector3d(this.x, this.y, this.z)
+
+fun Vec3.toVector3f(): Vector3f = Vector3f(this.x.toFloat(), this.y.toFloat(), this.z.toFloat())
+
+fun Vector3f.toVec3(): Vec3 = Vec3(this.x.toDouble(), this.y.toDouble(), this.z.toDouble())
+
+fun Vector3d.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
+
+fun Vec3.rotateAroundY(angle: Double, origin: Vec3): Vec3 {
+    val translated = this.subtract(origin)
+    val sin = kotlin.math.sin(angle)
+    val cos = kotlin.math.cos(angle)
+    val x = translated.x * cos - translated.z * sin
+    val z = translated.x * sin + translated.z * cos
+    return Vec3(x, translated.y, z).add(origin)
 }
 
-fun Vector.copy(vec3: Vector3f) {
-    this.x = vec3.x.toDouble()
-    this.y = vec3.y.toDouble()
-    this.z = vec3.z.toDouble()
+fun Vec3.rotate(rotation: Quaterniond): Vec3 {
+    val vec = toVector3d().rotate(rotation)
+    return Vec3(vec.x, vec.y, vec.z)
 }
 
-fun Vector.rotateAroundY(angle: Double, origin: Vector) {
-    this.subtract(origin).rotateAroundY(angle).add(origin)
+fun Vec3.rotate(rotation: Quaternionf): Vec3 {
+    val vec = toVector3f().rotate(rotation)
+    return Vec3(vec.x.toDouble(), vec.y.toDouble(), vec.z.toDouble())
 }
 
-fun Vector.rotate(rotation: Quaterniond): Vector {
-    this.copy(toVector3d().rotate(rotation))
-    return this
-}
-
-fun Vector.rotate(rotation: Quaternionf): Vector {
-    this.copy(toVector3f().rotate(rotation))
-    return this
-}
-
-fun Vector.getPitch(): Float {
+fun Vec3.getPitch(): Float {
     val x = this.x
     val y = this.y
     val z = this.z
@@ -89,7 +88,7 @@ fun Vector.getPitch(): Float {
     return pitch.toFloat()
 }
 
-fun Vector.getYaw(): Float {
+fun Vec3.getYaw(): Float {
     val x = this.x
     val z = this.z
     val yaw = atan2(-x, z)
@@ -115,7 +114,7 @@ fun Quaternionf.getYXZRelative(pivot: Quaternionf): Vector3f {
     return relative.getEulerAnglesYXZ(Vector3f())
 }
 
-fun Vector.getRotationAroundAxis(pivot: Quaternionf): Vector3f {
+fun Vec3.getRotationAroundAxis(pivot: Quaternionf): Vector3f {
     val orientation = Quaternionf().rotationTo(FORWARD_VECTOR.toVector3f(), this.toVector3f())
     return orientation.getYXZRelative(pivot)
 }
@@ -136,25 +135,24 @@ fun toRadians(degrees: Float): Float {
     return Math.toRadians(degrees.toDouble()).toFloat()
 }
 
-fun Vector.verticalDistance(other: Vector): Double {
+fun Vec3.verticalDistance(other: Vec3): Double {
     return abs(this.y - other.y)
 }
 
-fun Vector.horizontalDistance(other: Vector): Double {
+fun Vec3.horizontalDistance(other: Vec3): Double {
     val x = this.x - other.x
     val z = this.z - other.z
     return sqrt(x * x + z * z)
 }
 
-fun Vector.horizontalLength(): Double {
+fun Vec3.horizontalLength(): Double {
     return sqrt(x * x + z * z)
 }
 
-fun List<Vector>.average(): Vector {
-    val out = Vector(0, 0, 0)
-    for (vector in this) out.add(vector)
-    out.multiply(1.0 / this.size)
-    return out
+fun List<Vec3>.average(): Vec3 {
+    var out = Vec3(0.0, 0.0, 0.0)
+    for (vector in this) out = out.add(vector)
+    return out.scale(1.0 / this.size)
 }
 
 class SplitDistance(
@@ -175,12 +173,12 @@ class SplitDistance(
 }
 
 class SplitDistanceZone(
-    val center: Vector,
+    val center: Vec3,
     val size: SplitDistance
 ) {
-    fun contains(point: Vector): Boolean {
+    fun contains(point: Vec3): Boolean {
 //        return point.distance(center) <= size.horizontal
-        return center.horizontalDistance(point) <= size.horizontal && center.verticalDistance(point) <= size.vertical
+    return center.horizontalDistance(point) <= size.horizontal && center.verticalDistance(point) <= size.vertical
     }
 
     val horizontal: Double; get() = size.horizontal
@@ -188,10 +186,10 @@ class SplitDistanceZone(
 }
 
 
-val DOWN_VECTOR; get () = Vector(0, -1, 0)
-val UP_VECTOR; get () = Vector(0, 1, 0)
-val FORWARD_VECTOR; get () = Vector(0, 0, 1)
-val LEFT_VECTOR; get () = Vector(-1, 0, 0)
-val RIGHT_VECTOR; get () = Vector(1, 0, 0)
+val DOWN_VECTOR; get() = Vec3(0.0, -1.0, 0.0)
+val UP_VECTOR; get() = Vec3(0.0, 1.0, 0.0)
+val FORWARD_VECTOR; get() = Vec3(0.0, 0.0, 1.0)
+val LEFT_VECTOR; get() = Vec3(-1.0, 0.0, 0.0)
+val RIGHT_VECTOR; get() = Vec3(1.0, 0.0, 0.0)
 
 
