@@ -2,7 +2,6 @@ package com.heledron.spideranimation
 
 import com.heledron.spideranimation.kinematic_chain_visualizer.KinematicChainVisualizer
 import com.heledron.spideranimation.spider.misc.StayStillBehaviour
-import com.heledron.spideranimation.spider.rendering.targetRenderEntity
 import com.heledron.spideranimation.utilities.AppState
 import com.heledron.spideranimation.ModItems
 import com.heledron.spideranimation.registerCommands
@@ -19,8 +18,8 @@ import net.minecraftforge.fml.config.ModConfig
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 import org.apache.logging.log4j.LogManager
-import org.bukkit.Bukkit
-import org.bukkit.util.Vector
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.Vec3
 import java.io.Closeable
 
 @Mod(SpiderAnimationMod.MOD_ID)
@@ -72,9 +71,11 @@ class SpiderAnimationMod {
             if (spider.mount.getRider() == null) spider.behaviour = StayStillBehaviour(spider)
         }
 
-        val target = (if (AppState.miscOptions.showLaser) AppState.target else null)
-            ?: AppState.chainVisualizer?.target
-        if (target != null) AppState.renderer.render("target", targetRenderEntity(target))
+        // Render target marker if one is set
+        val target = if (AppState.miscOptions.showLaser) AppState.target else null
+        if (target != null) {
+            // Target rendering removed pending Vec3 renderer implementation
+        }
 
         AppState.renderer.flush()
         AppState.target = null
@@ -84,13 +85,12 @@ class SpiderAnimationMod {
     fun onEntityJoin(event: EntityJoinLevelEvent) {
         if (!event.entity.tags.contains("spider.chain_visualizer")) return
         val segmentPlans = AppState.options.bodyPlan.legs.lastOrNull()?.segments ?: return
-        val worldName = event.level.dimension().location().path
-        val bukkitWorld = Bukkit.getWorld(worldName) ?: return
-        val root = Vector(event.entity.x, event.entity.y, event.entity.z)
+        val level = event.level as? ServerLevel ?: return
+        val root = Vec3(event.entity.x, event.entity.y, event.entity.z)
         AppState.chainVisualizer = if (AppState.chainVisualizer != null) null else KinematicChainVisualizer.create(
             segmentPlans = segmentPlans,
             root = root,
-            world = bukkitWorld,
+            world = level,
             straightenRotation = AppState.options.walkGait.legStraightenRotation
         )
         AppState.chainVisualizer?.detailed = AppState.showDebugVisuals
