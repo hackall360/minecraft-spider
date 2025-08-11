@@ -2,7 +2,7 @@ package com.heledron.spideranimation.spider.presets
 
 import com.heledron.spideranimation.utilities.DisplayModel
 import com.heledron.spideranimation.utilities.parseModelFromCommand
-import org.bukkit.Material
+import net.minecraft.world.level.block.Blocks
 
 enum class SpiderTorsoModels(val model: DisplayModel) {
     EMPTY(DisplayModel.empty()),
@@ -14,8 +14,8 @@ enum class SpiderTorsoModels(val model: DisplayModel) {
         scale(.8f)
         pieces.forEach {
             it.tags += "torso"
-            if (it.block.material == Material.SMOOTH_QUARTZ) it.tags += "cloak"
-            if (it.tags.contains("cloak")) it.block = org.bukkit.Material.WHITE_CONCRETE.createBlockData()
+            if (it.block.is(Blocks.SMOOTH_QUARTZ)) it.tags += "cloak"
+            if (it.tags.contains("cloak")) it.block = Blocks.WHITE_CONCRETE.defaultBlockState()
         }
     }),
 
@@ -26,8 +26,8 @@ enum class SpiderTorsoModels(val model: DisplayModel) {
         scale(.75f)
         pieces.forEach {
             it.tags += "torso"
-            if (it.block.material == Material.SMOOTH_QUARTZ) it.tags += "cloak"
-            if (it.tags.contains("cloak")) it.block = org.bukkit.Material.WHITE_CONCRETE.createBlockData()
+            if (it.block.is(Blocks.SMOOTH_QUARTZ)) it.tags += "cloak"
+            if (it.tags.contains("cloak")) it.block = Blocks.WHITE_CONCRETE.defaultBlockState()
         }
     }),
 
@@ -38,8 +38,8 @@ enum class SpiderTorsoModels(val model: DisplayModel) {
         this.scale(.8f)
         this.pieces.forEach {
             it.tags += "torso"
-            if (it.block.material == Material.BLACK_CONCRETE) it.tags += "cloak"
-            if (it.block.material == Material.BLACK_CONCRETE) it.block = org.bukkit.Material.WHITE_CONCRETE.createBlockData()
+            if (it.block.is(Blocks.BLACK_CONCRETE)) it.tags += "cloak"
+            if (it.block.is(Blocks.BLACK_CONCRETE)) it.block = Blocks.WHITE_CONCRETE.defaultBlockState()
         }
     }),
 }

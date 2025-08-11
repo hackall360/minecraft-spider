@@ -5,7 +5,7 @@ import com.heledron.spideranimation.spider.configuration.LegPlan
 import com.heledron.spideranimation.spider.configuration.SegmentPlan
 import com.heledron.spideranimation.spider.configuration.SpiderOptions
 import com.heledron.spideranimation.utilities.FORWARD_VECTOR
-import org.bukkit.Material
+import net.minecraft.world.level.block.Blocks
 import org.bukkit.util.Vector
 
 
@@ -21,7 +21,7 @@ private fun BodyPlan.addLegPair(root: Vector, rest: Vector, segments: List<Segme
 fun biped(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
     options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(1.0, .0, .0), equalLength(segmentCount, 1.0 * segmentLength))
-    applyLineLegModel(options.bodyPlan, Material.NETHERITE_BLOCK.createBlockData())
+      applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
@@ -29,7 +29,7 @@ fun quadruped(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
     options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(0.9,.0, 0.9), equalLength(segmentCount, 0.9 * segmentLength))
     options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(1.0, .0, -1.1), equalLength(segmentCount, 1.2 * segmentLength))
-    applyLineLegModel(options.bodyPlan, Material.NETHERITE_BLOCK.createBlockData())
+      applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
@@ -38,7 +38,7 @@ fun hexapod(segmentCount: Int, segmentLength: Double): SpiderOptions {
     options.bodyPlan.addLegPair(Vector(.0,.0,0.1), Vector(1.0,.0, 1.1), equalLength(segmentCount, 1.1 * segmentLength))
     options.bodyPlan.addLegPair(Vector(.0,.0,0.0), Vector(1.3,.0,-0.3), equalLength(segmentCount, 1.1 * segmentLength))
     options.bodyPlan.addLegPair(Vector(.0,.0,-.1), Vector(1.2,.0,-2.0), equalLength(segmentCount, 1.6 * segmentLength))
-    applyLineLegModel(options.bodyPlan, Material.NETHERITE_BLOCK.createBlockData())
+      applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
@@ -48,7 +48,7 @@ fun octopod(segmentCount: Int, segmentLength: Double): SpiderOptions {
     options.bodyPlan.addLegPair(Vector(.0,.0,  .0), Vector(1.3, .0,  0.4), equalLength(segmentCount, 1.0 * segmentLength))
     options.bodyPlan.addLegPair(Vector(.0,.0, -.1), Vector(1.3, .0, -0.9), equalLength(segmentCount, 1.1 * segmentLength))
     options.bodyPlan.addLegPair(Vector(.0,.0, -.2), Vector(1.1, .0, -2.5), equalLength(segmentCount, 1.6 * segmentLength))
-    applyLineLegModel(options.bodyPlan, Material.NETHERITE_BLOCK.createBlockData())
+      applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 

@@ -3,18 +3,18 @@ package com.heledron.spideranimation.spider.presets
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.configuration.BodyPlan
 import com.heledron.spideranimation.utilities.BlockDisplayModelPiece
+import com.heledron.spideranimation.utilities.Brightness
 import com.heledron.spideranimation.utilities.DisplayModel
-import org.bukkit.block.data.BlockData
-import org.bukkit.entity.Display
+import net.minecraft.world.level.block.state.BlockState
 import org.joml.Matrix4f
 
 
-private fun createDefaultModel(block: BlockData, length: Double, thickness: Double) = DisplayModel(listOf(BlockDisplayModelPiece(
+private fun createDefaultModel(block: BlockState, length: Double, thickness: Double) = DisplayModel(listOf(BlockDisplayModelPiece(
     block = block,
     transform = Matrix4f()
         .scale(thickness.toFloat(), thickness.toFloat(), length.toFloat())
         .translate(-.5f,-.5f,.0f),
-    brightness = Display.Brightness(0, 15),
+    brightness = Brightness(0, 15),
     tags = listOf("cloak")
 )))
 
@@ -26,7 +26,7 @@ fun applyEmptyLegModel(bodyPlan: BodyPlan) {
     }
 }
 
-fun applyLineLegModel(bodyPlan: BodyPlan, block: BlockData) {
+fun applyLineLegModel(bodyPlan: BodyPlan, block: BlockState) {
     val rootThickness = 1.0/16 * 4.5
     val tipThickness = 1.0/16 * 1.5
 
