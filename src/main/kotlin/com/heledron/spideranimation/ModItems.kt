@@ -6,7 +6,7 @@ import com.heledron.spideranimation.spider.rendering.*
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.player.Player
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
@@ -32,10 +32,10 @@ object ModItems {
     val COME_HERE: RegistryObject<Item> = ITEMS.register("come_here") { ComeHereItem(Item.Properties()) }
 }
 
-private fun toBukkit(player: Player): BukkitPlayer = player.bukkitEntity as BukkitPlayer
+private fun toBukkit(player: ServerPlayer): BukkitPlayer = player.bukkitEntity as BukkitPlayer
 
 class SpiderItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         val spider = AppState.spider
@@ -43,7 +43,8 @@ class SpiderItem(properties: Properties) : Item(properties) {
             val yawIncrements = 45.0f
             val yaw = bukkitPlayer.location.yaw
             val yawRounded = (yaw / yawIncrements).roundToInt() * yawIncrements
-            val playerLocation = bukkitPlayer.eyeLocation
+            val eye = player.eyePosition
+            val playerLocation = org.bukkit.Location(bukkitPlayer.world, eye.x, eye.y, eye.z, bukkitPlayer.location.yaw, bukkitPlayer.location.pitch)
             val hit = raycastGround(playerLocation, playerLocation.direction, 100.0)?.hitPosition
                 ?.toLocation(playerLocation.world!!) ?: return InteractionResultHolder.pass(player.getItemInHand(hand))
             hit.yaw = yawRounded
@@ -62,12 +63,12 @@ class SpiderItem(properties: Properties) : Item(properties) {
 class DisableLegItem(properties: Properties) : Item(properties) {
     override fun inventoryTick(stack: ItemStack, level: Level, entity: Entity, slot: Int, selected: Boolean) {
         if (level.isClientSide) return
-        if (entity is Player && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
-            AppState.spider?.pointDetector?.player = toBukkit(entity)
+        if (entity is ServerPlayer && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
+            AppState.spider?.pointDetector?.player = entity
         }
     }
 
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         val selectedLeg = AppState.spider?.pointDetector?.selectedLeg
@@ -82,7 +83,7 @@ class DisableLegItem(properties: Properties) : Item(properties) {
 }
 
 class ToggleDebugItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         AppState.showDebugVisuals = !AppState.showDebugVisuals
@@ -96,7 +97,7 @@ class ToggleDebugItem(properties: Properties) : Item(properties) {
 }
 
 class SwitchRendererItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         val spider = AppState.spider ?: return InteractionResultHolder.pass(player.getItemInHand(hand))
@@ -112,7 +113,7 @@ class SwitchRendererItem(properties: Properties) : Item(properties) {
 }
 
 class ToggleCloakItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (!level.isClientSide) {
             AppState.spider?.cloak?.toggleCloak()
         }
@@ -121,7 +122,7 @@ class ToggleCloakItem(properties: Properties) : Item(properties) {
 }
 
 class ChainVisStepItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         val chain = AppState.chainVisualizer ?: return InteractionResultHolder.pass(player.getItemInHand(hand))
@@ -132,7 +133,7 @@ class ChainVisStepItem(properties: Properties) : Item(properties) {
 }
 
 class ChainVisStraightenItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         val chain = AppState.chainVisualizer ?: return InteractionResultHolder.pass(player.getItemInHand(hand))
@@ -143,7 +144,7 @@ class ChainVisStraightenItem(properties: Properties) : Item(properties) {
 }
 
 class SwitchGaitItem(properties: Properties) : Item(properties) {
-    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+    override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val bukkitPlayer = toBukkit(player)
         playSound(bukkitPlayer.location, Sound.BLOCK_DISPENSER_FAIL, 1.0f, 2.0f)
@@ -158,22 +159,23 @@ class SwitchGaitItem(properties: Properties) : Item(properties) {
 class LaserPointerItem(properties: Properties) : Item(properties) {
     override fun inventoryTick(stack: ItemStack, level: Level, entity: Entity, slot: Int, selected: Boolean) {
         if (level.isClientSide) return
-        if (entity is Player && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
+        if (entity is ServerPlayer && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
             val bukkitPlayer = toBukkit(entity)
-            val location = bukkitPlayer.eyeLocation
-            val result = raycastGround(location, location.direction, 100.0)
+            val eye = entity.eyePosition
+            val directionVec = entity.lookAngle
+            val result = raycastGround(entity.level(), eye, directionVec, 100.0)
             if (result == null) {
-                val direction = bukkitPlayer.eyeLocation.direction.setY(0.0).normalize()
+                val direction = org.bukkit.util.Vector(directionVec.x, 0.0, directionVec.z).normalize()
                 AppState.spider?.let { it.behaviour = DirectionBehaviour(it, direction, direction) }
                 AppState.chainVisualizer?.let {
                     it.target = null
                     it.resetIterator()
                 }
             } else {
-                val targetVal = result.hitPosition.toLocation(bukkitPlayer.world)
+                val targetVal = result.location
                 AppState.target = targetVal
                 AppState.chainVisualizer?.let {
-                    it.target = targetVal
+                    it.target = org.bukkit.Location(bukkitPlayer.world, targetVal.x, targetVal.y, targetVal.z)
                     it.resetIterator()
                 }
                 AppState.spider?.let { it.behaviour = TargetBehaviour(it, targetVal.toVector(), it.lerpedGait.bodyHeight) }
@@ -185,11 +187,12 @@ class LaserPointerItem(properties: Properties) : Item(properties) {
 class ComeHereItem(properties: Properties) : Item(properties) {
     override fun inventoryTick(stack: ItemStack, level: Level, entity: Entity, slot: Int, selected: Boolean) {
         if (level.isClientSide) return
-        if (entity is Player && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
+        if (entity is ServerPlayer && (entity.mainHandItem == stack || entity.offhandItem == stack)) {
             val bukkitPlayer = toBukkit(entity)
             AppState.spider?.let {
                 val height = if (it.gait.straightenLegs) it.lerpedGait.bodyHeight * 2.0 else it.lerpedGait.bodyHeight * 5.0
-                it.behaviour = TargetBehaviour(it, bukkitPlayer.eyeLocation.toVector(), height)
+                val eye = entity.eyePosition
+                it.behaviour = TargetBehaviour(it, org.bukkit.util.Vector(eye.x, eye.y, eye.z), height)
             }
         }
     }

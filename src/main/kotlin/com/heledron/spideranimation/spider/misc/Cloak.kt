@@ -11,6 +11,7 @@ import org.bukkit.block.data.BlockData
 import org.bukkit.entity.Display
 import org.bukkit.util.RayTraceResult
 import org.bukkit.util.Vector
+import net.minecraft.server.level.ServerPlayer
 import java.util.WeakHashMap
 
 class Cloak(var  spider: Spider) : SpiderComponent {
@@ -65,9 +66,10 @@ class Cloak(var  spider: Spider) : SpiderComponent {
         }
 
         fun cast(): RayTraceResult? {
-            val targetPlayer = Bukkit.getOnlinePlayers().firstOrNull() ?: return groundCast()
+            val targetPlayer = spider.world.players.firstOrNull() as? ServerPlayer ?: return groundCast()
 
-            val direction = location.toVector().subtract(targetPlayer.eyeLocation.toVector())
+            val eye = targetPlayer.eyePosition
+            val direction = location.toVector().subtract(Vector(eye.x, eye.y, eye.z))
             val rayCast = raycastGround(location, direction, 30.0)
             return rayCast
         }

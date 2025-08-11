@@ -5,8 +5,9 @@ import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.EventEmitter
 import com.heledron.spideranimation.utilities.UP_VECTOR
 import com.heledron.spideranimation.utilities.runLater
-import org.bukkit.entity.Trident
-import org.joml.Quaternionf
+import com.heledron.spideranimation.utilities.toVector
+import net.minecraft.world.entity.projectile.ThrownTrident
+import net.minecraft.world.phys.AABB
 import org.joml.Vector3f
 
 class TridentHitDetector(val spider: Spider): SpiderComponent {
@@ -21,26 +22,31 @@ class TridentHitDetector(val spider: Spider): SpiderComponent {
     }
 
     override fun update() {
-        val tridents = spider.world.getNearbyEntities(spider.position.toLocation(spider.world), 1.5, 1.5, 1.5) {
-            it is Trident && it.shooter != spider.mount.getRider()
+        val aabb = AABB(
+            spider.position.x - 1.5, spider.position.y - 1.5, spider.position.z - 1.5,
+            spider.position.x + 1.5, spider.position.y + 1.5, spider.position.z + 1.5
+        )
+        val tridents = spider.world.getEntitiesOfClass(ThrownTrident::class.java, aabb) {
+            it.owner != spider.mount.getRider()
         }
         for (trident in tridents) {
-            if (trident != null && trident.velocity.length() > 2.0) {
-                val tridentDirection = trident.velocity.normalize()
+            if (trident.deltaMovement.length() > 2.0) {
+                val tridentDirection = trident.deltaMovement.normalize()
 
-                trident.velocity = tridentDirection.clone().multiply(-.3)
+                trident.setDeltaMovement(tridentDirection.scale(-0.3))
+                trident.hasImpulse = true
                 onHit.emit()
 
-                spider.velocity.add(tridentDirection.multiply(spider.gait.tridentKnockBack))
+                spider.velocity.add(tridentDirection.scale(spider.gait.tridentKnockBack).toVector())
 
                 // apply rotational acceleration
-                val hitDirection = spider.position.clone().subtract(trident.location.toVector()).normalize()
-                val axis = UP_VECTOR.crossProduct(tridentDirection)
-                val angle = hitDirection.angle(UP_VECTOR)
+                val hitDirection = spider.position.subtract(trident.position()).normalize()
+                val axis = UP_VECTOR.cross(tridentDirection)
+                val angle = hitDirection.toVector3f().angle(UP_VECTOR.toVector3f())
 
                 val accelerationMagnitude = angle * spider.gait.tridentRotationalKnockBack.toFloat()
 
-                spider.accelerateRotation(axis, accelerationMagnitude)
+                spider.accelerateRotation(axis.toVector(), accelerationMagnitude)
             }
         }
     }
