@@ -2,8 +2,9 @@ package com.heledron.spideranimation.spider.rendering
 
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.utilities.*
-import org.bukkit.*
-import org.bukkit.entity.Display
+import com.heledron.spideranimation.utilities.Brightness
+import net.minecraft.world.level.block.Blocks
+import org.bukkit.Location
 import org.bukkit.util.Vector
 import org.joml.Matrix4f
 import org.joml.Vector4f
@@ -13,9 +14,9 @@ fun targetRenderEntity(
 ) = blockRenderEntity(
     location = location,
     init = {
-        it.block = Material.REDSTONE_BLOCK.createBlockData()
+        it.blockState = Blocks.REDSTONE_BLOCK.defaultBlockState()
         it.teleportDuration = 1
-        it.brightness = Display.Brightness(15, 15)
+        it.setBrightness(Brightness(15, 15))
         it.transformation = centredTransform(.25f, .25f, .25f)
     }
 )
@@ -88,11 +89,11 @@ private fun modelPieceToRenderEntity(
         } else null
 
         if (cloak != null) {
-            it.block = cloak.first
-            it.brightness = cloak.second
+            it.blockState = cloak.first
+            it.setBrightness(cloak.second)
         } else {
-            it.block = piece.block
-            it.brightness = piece.brightness
+            it.blockState = piece.block
+            it.setBrightness(piece.brightness)
         }
     }
 )

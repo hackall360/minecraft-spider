@@ -1,43 +1,43 @@
 package com.heledron.spideranimation.spider.presets
 
-import org.bukkit.Material
-import org.bukkit.block.data.BlockData
-import org.bukkit.entity.Display
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
+import com.heledron.spideranimation.utilities.Brightness
 
-enum class AnimatedPalettes(val palette: List<Pair<BlockData, Display.Brightness>>) {
+enum class AnimatedPalettes(val palette: List<Pair<BlockState, Brightness>>) {
     CYAN_EYES(arrayOf(
-        * Array(3) { Material.CYAN_SHULKER_BOX },
-        Material.CYAN_CONCRETE,
-        Material.CYAN_CONCRETE_POWDER,
+        * Array(3) { Blocks.CYAN_SHULKER_BOX },
+        Blocks.CYAN_CONCRETE,
+        Blocks.CYAN_CONCRETE_POWDER,
 
-        Material.LIGHT_BLUE_SHULKER_BOX,
-        Material.LIGHT_BLUE_CONCRETE,
-        Material.LIGHT_BLUE_CONCRETE_POWDER,
-    ).map { it.createBlockData() to Display.Brightness(15,15) }),
+        Blocks.LIGHT_BLUE_SHULKER_BOX,
+        Blocks.LIGHT_BLUE_CONCRETE,
+        Blocks.LIGHT_BLUE_CONCRETE_POWDER,
+    ).map { it.defaultBlockState() to Brightness(15,15) }),
 
     CYAN_BLINKING_LIGHTS(arrayOf(
-        * Array(3) { Material.BLACK_SHULKER_BOX to Display.Brightness(0,15) },
-        * Array(3) { Material.VERDANT_FROGLIGHT to Display.Brightness(15,15) },
-        Material.LIGHT_BLUE_SHULKER_BOX to Display.Brightness(15,15),
-        Material.LIGHT_BLUE_CONCRETE to Display.Brightness(15,15),
-        Material.LIGHT_BLUE_CONCRETE_POWDER to Display.Brightness(15,15),
-    ).map { (block, brightness) -> block.createBlockData() to brightness }),
+        * Array(3) { Blocks.BLACK_SHULKER_BOX to Brightness(0,15) },
+        * Array(3) { Blocks.VERDANT_FROGLIGHT to Brightness(15,15) },
+        Blocks.LIGHT_BLUE_SHULKER_BOX to Brightness(15,15),
+        Blocks.LIGHT_BLUE_CONCRETE to Brightness(15,15),
+        Blocks.LIGHT_BLUE_CONCRETE_POWDER to Brightness(15,15),
+    ).map { (block, brightness) -> block.defaultBlockState() to brightness }),
 
 
     RED_EYES(arrayOf(
-        * Array(3) { Material.RED_SHULKER_BOX },
-        Material.RED_CONCRETE,
-        Material.RED_CONCRETE_POWDER,
+        * Array(3) { Blocks.RED_SHULKER_BOX },
+        Blocks.RED_CONCRETE,
+        Blocks.RED_CONCRETE_POWDER,
 
-        Material.FIRE_CORAL_BLOCK,
-        Material.REDSTONE_BLOCK,
-    ).map { it.createBlockData() to Display.Brightness(15,15) }),
+        Blocks.FIRE_CORAL_BLOCK,
+        Blocks.REDSTONE_BLOCK,
+    ).map { it.defaultBlockState() to Brightness(15,15) }),
 
     RED_BLINKING_LIGHTS(arrayOf(
-        * Array(3) { Material.BLACK_SHULKER_BOX to Display.Brightness(0,15) },
-        * Array(3) { Material.PEARLESCENT_FROGLIGHT to Display.Brightness(15,15) },
-        Material.RED_TERRACOTTA to Display.Brightness(15,15),
-        Material.REDSTONE_BLOCK to Display.Brightness(15,15),
-        Material.FIRE_CORAL_BLOCK to Display.Brightness(15,15),
-    ).map { (block, brightness) -> block.createBlockData() to brightness }),
+        * Array(3) { Blocks.BLACK_SHULKER_BOX to Brightness(0,15) },
+        * Array(3) { Blocks.PEARLESCENT_FROGLIGHT to Brightness(15,15) },
+        Blocks.RED_TERRACOTTA to Brightness(15,15),
+        Blocks.REDSTONE_BLOCK to Brightness(15,15),
+        Blocks.FIRE_CORAL_BLOCK to Brightness(15,15),
+    ).map { (block, brightness) -> block.defaultBlockState() to brightness }),
 }

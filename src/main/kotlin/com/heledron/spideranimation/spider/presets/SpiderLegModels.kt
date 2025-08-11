@@ -1,7 +1,7 @@
 package com.heledron.spideranimation.spider.presets
 
 import com.heledron.spideranimation.utilities.parseModelFromCommand
-import org.bukkit.Material
+import net.minecraft.world.level.block.Blocks
 
 object SpiderLegModel {
     val BASE = parseModelFromCommand(
@@ -28,8 +28,8 @@ object SpiderLegModel {
         pieces.forEach {
             it.tags += "tibia"
             it.tags += "leg"
-            if (it.block.material == Material.SMOOTH_QUARTZ) it.tags += "cloak"
-            if (it.tags.contains("cloak")) it.block = Material.WHITE_CONCRETE.createBlockData()
+            if (it.block.is(Blocks.SMOOTH_QUARTZ)) it.tags += "cloak"
+            if (it.tags.contains("cloak")) it.block = Blocks.WHITE_CONCRETE.defaultBlockState()
         }
     }
 
@@ -39,8 +39,8 @@ object SpiderLegModel {
         pieces.forEach {
             it.tags += "tip"
             it.tags += "leg"
-            if (it.block.material == Material.SMOOTH_QUARTZ) it.tags += "cloak"
-            if (it.tags.contains("cloak")) it.block = Material.WHITE_CONCRETE.createBlockData()
+            if (it.block.is(Blocks.SMOOTH_QUARTZ)) it.tags += "cloak"
+            if (it.tags.contains("cloak")) it.block = Blocks.WHITE_CONCRETE.defaultBlockState()
         }
     }
 }

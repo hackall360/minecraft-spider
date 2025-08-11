@@ -6,6 +6,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
+import com.heledron.spideranimation.utilities.Brightness
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.BlockHitResult
@@ -167,5 +168,15 @@ fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(matr
     val oldTransform = this.transformation
     this.transformation = net.minecraft.util.Mth.quatFromXYZ(0f,0f,0f) // placeholder
     if (oldTransform == this.transformation) return
-    this.interpolationDelay = 0
+      this.interpolationDelay = 0
+      }
+
+fun net.minecraft.world.entity.Display.setBrightness(brightness: Brightness?) {
+    if (brightness == null) {
+        this.setBlockLightLevel(0)
+        this.setSkyLightLevel(0)
+    } else {
+        this.setBlockLightLevel(brightness.block)
+        this.setSkyLightLevel(brightness.sky)
+    }
 }

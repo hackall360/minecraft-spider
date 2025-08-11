@@ -1,13 +1,14 @@
 package com.heledron.spideranimation.utilities
 
-import org.bukkit.block.data.BlockData
-import org.bukkit.entity.Display
+import net.minecraft.world.level.block.state.BlockState
 import org.joml.Matrix4f
 
+data class Brightness(val block: Int, val sky: Int)
+
 class BlockDisplayModelPiece (
-    var block: BlockData,
+    var block: BlockState,
     var transform: Matrix4f,
-    var brightness: Display.Brightness? = null,
+    var brightness: Brightness? = null,
     var tags: List<String> = emptyList(),
 ) {
     fun scale(scale: Float) {
@@ -19,9 +20,9 @@ class BlockDisplayModelPiece (
     }
 
     fun clone() = BlockDisplayModelPiece(
-        block = block.clone(),
+        block = block,
         transform = Matrix4f(transform),
-        brightness = brightness?.let { Display.Brightness(it.blockLight, it.skyLight) },
+        brightness = brightness?.let { Brightness(it.block, it.sky) },
         tags = tags,
     )
 }
