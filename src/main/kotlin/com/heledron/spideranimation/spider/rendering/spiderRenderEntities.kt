@@ -89,7 +89,7 @@ private fun modelPieceToRenderEntity(
             piecePosition.y += relative.y
             piecePosition.z += relative.z
 
-            spider.cloak.getPiece(piece, piecePosition, piece.block, piece.brightness)
+            spider.cloak.getPiece(piece, piecePosition.toVec3(), piece.block, piece.brightness)
         } else null
 
         if (cloak != null) {

@@ -2,29 +2,27 @@ package com.heledron.spideranimation.utilities
 
 import com.google.gson.Gson
 import com.heledron.spideranimation.SpiderAnimationMod
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraftforge.server.ServerLifecycleHooks
-import org.bukkit.Color
-import org.bukkit.Material
-import org.bukkit.block.data.BlockData
-import kotlin.math.pow
-import kotlin.math.sqrt
 
-private fun String.parseJSONColors(): Map<Material, Color> {
-    val colorMap = mutableMapOf<Material, Color>()
+private fun String.parseJSONColors(): Map<Block, RGB> {
+    val colorMap = mutableMapOf<Block, RGB>()
 
     @Suppress("UNCHECKED_CAST")
-    val json = Gson().fromJson(this, Map::class.java) as Map<String, List<Int>>
+    val json = Gson().fromJson(this, Map::class.java) as Map<String, List<Double>>
 
     for ((key, value) in json) {
-        val material = Material.matchMaterial("minecraft:$key") ?: continue
-        colorMap[material] = Color.fromRGB(value[0], value[1], value[2])
+        val block = BuiltInRegistries.BLOCK.getOptional(ResourceLocation("minecraft", key)).orElse(null) ?: continue
+        colorMap[block] = RGB(value[0].toInt(), value[1].toInt(), value[2].toInt())
     }
 
     return colorMap
 }
 
-private val blocks: Map<Material, Color> by lazy {
+private val blocks: Map<Block, RGB> by lazy {
     val resourceManager = ServerLifecycleHooks.getCurrentServer().resourceManager
     val resource = resourceManager
         .getResource(ResourceLocation(SpiderAnimationMod.MOD_ID, "block_colors.json"))
@@ -33,113 +31,36 @@ private val blocks: Map<Material, Color> by lazy {
     resource.open().reader().use { it.readText().parseJSONColors() }
 }
 
-private val blocksWithBrightness: Map<Color, Pair<Material, Int>> by lazy {
-    mutableMapOf<Color, Pair<Material, Int>>().apply {
+private val blocksWithBrightness: Map<RGB, Pair<BlockState, Int>> by lazy {
+    mutableMapOf<RGB, Pair<BlockState, Int>>().apply {
         for (brightness in 15 downTo 0) {
-            for ((material, color) in blocks) {
-                if (!material.isOccluding) continue
-
+            for ((block, color) in blocks) {
                 val newColor = color.withBrightness(brightness)
-
                 if (newColor in this) continue
-
-                this[newColor] = material to brightness
-            }
-        }
-
-        for ((color, material) in this) {
-            val id = material.first.key.toString()
-
-            // replace log with wood
-            if (id.endsWith("_log")) {
-                val woodMaterial = Material.matchMaterial(id.replaceEnd("_log", "_wood")) ?: continue
-                this[color] = woodMaterial to material.second
+                this[newColor] = block.defaultBlockState() to brightness
             }
         }
     }
 }
 
-private val blockToColor: Map<Material, Color> by lazy {
-    blocks.toMutableMap().apply {
-        this[Material.GRASS_BLOCK] = this[Material.MOSS_BLOCK]!!
-        this[Material.MOSS_CARPET] = this[Material.MOSS_BLOCK]!!
-        this[Material.OAK_LEAVES] = this[Material.MOSS_BLOCK]!!
-
-        this[Material.WARPED_TRAPDOOR] = this[Material.WARPED_PLANKS]!!
-
-        this[Material.BARREL] = this[Material.SPRUCE_PLANKS]!!
-
-        // replace partial blocks with their full block counterparts
-        for (material in Material.entries) {
-            if (!material.isBlock) continue
-            val id = material.key.toString()
-
-            if (this.containsKey(material)) continue
-
-            val fullBlockName = id
-                .replaceEnd("_slab", "")
-                .replaceEnd("_stairs", "")
-                .replaceEnd("_wall", "")
-                .replaceEnd("_trapdoor", "")
-                .replace("waxed_", "")
-
-            if (fullBlockName == id) continue
-
-            val fullBlockMaterial =
-                Material.matchMaterial(fullBlockName + "_planks") ?:
-                Material.matchMaterial(fullBlockName) ?:
-                Material.matchMaterial(fullBlockName + "s") ?:
-                Material.matchMaterial(fullBlockName + "_wood")
-
-            this[material] = this[fullBlockMaterial] ?: continue
-        }
-
-        this[Material.CAMPFIRE] = this[Material.OAK_LOG]!!
-    }
+fun getColorFromBlock(state: BlockState): RGB? {
+    return blocks[state.block]
 }
 
-fun getColorFromBlock(block: BlockData): Color? {
-    return blockToColor[block.material]
-}
-
-fun getColorFromBlock(block: BlockData, brightness: Int): Color? {
-    return getColorFromBlock(block)?.withBrightness(brightness)
+fun getColorFromBlock(state: BlockState, brightness: Int): RGB? {
+    return getColorFromBlock(state)?.withBrightness(brightness)
 }
 
 class MatchInfo(
-    val block: BlockData,
-    val blockColor: Color,
+    val state: BlockState,
+    val blockColor: RGB,
     val distance: Double,
     val brightness: Int,
 )
 
-fun getBestMatchFromColor(color: Color, allowCustomBrightness: Boolean): MatchInfo {
+fun getBestMatchFromColor(color: RGB, allowCustomBrightness: Boolean): MatchInfo {
     val map = if (allowCustomBrightness) blocksWithBrightness else blocksWithBrightness.filterValues { it.second == 15 }
-
     val bestMatch = map.minBy { it.key.distanceTo(color) }
-    return MatchInfo(bestMatch.value.first.createBlockData(), bestMatch.key, color.distanceTo(bestMatch.key), bestMatch.value.second)
+    return MatchInfo(bestMatch.value.first, bestMatch.key, color.distanceTo(bestMatch.key), bestMatch.value.second)
 }
 
-private fun String.replaceEnd(suffix: String, with: String): String {
-    return if (endsWith(suffix)) {
-        substring(0, length - suffix.length) + with
-    } else {
-        this
-    }
-}
-
-private fun Color.distanceTo(other: Color): Double {
-    return sqrt(
-        (red - other.red).toDouble().pow(2) +
-                (green - other.green).toDouble().pow(2) +
-                (blue - other.blue).toDouble().pow(2)
-    )
-}
-
-private fun Color.withBrightness(brightness: Int): Color {
-    return Color.fromRGB(
-        (red * brightness.toDouble() / 15).toInt(),
-        (green * brightness.toDouble() / 15).toInt(),
-        (blue * brightness.toDouble() / 15).toInt(),
-    )
-}
