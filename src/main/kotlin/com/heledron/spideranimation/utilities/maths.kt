@@ -1,8 +1,8 @@
 package com.heledron.spideranimation.utilities
 
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
 import org.joml.*
-import org.bukkit.util.Vector
 import java.lang.Math
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -60,10 +60,6 @@ fun Vector3f.toVec3(): Vec3 = Vec3(this.x.toDouble(), this.y.toDouble(), this.z.
 
 fun Vector3d.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
 
-fun Vector.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
-
-fun Vec3.toVector(): Vector = Vector(this.x, this.y, this.z)
-
 fun Vec3.rotateAroundY(angle: Double, origin: Vec3): Vec3 {
     val translated = this.subtract(origin)
     val sin = kotlin.math.sin(angle)
@@ -106,6 +102,14 @@ fun Float.yawRadians(): Float {
 
 fun Float.pitchRadians(): Float {
     return toRadians(this)
+}
+
+fun Entity.yawRadians(): Float {
+    return this.yRot.yawRadians()
+}
+
+fun Entity.pitchRadians(): Float {
+    return this.xRot.pitchRadians()
 }
 
 //fun Quaterniond.rotationToYX(fromDir: Vector3d, toDir: Vector3d): Quaterniond {
