@@ -1,22 +1,34 @@
 package com.heledron.spideranimation.utilities
 
-import org.bukkit.Location
-import org.bukkit.World
-import org.bukkit.entity.BlockDisplay
-import org.bukkit.entity.Display
-import org.bukkit.entity.Entity
-import org.bukkit.entity.TextDisplay
-import org.bukkit.util.Vector
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.Display
+import net.minecraft.world.entity.Display.BlockDisplay
+import net.minecraft.world.entity.Display.TextDisplay
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.Vec3
 import org.joml.Matrix4f
 import java.io.Closeable
 
-class RenderEntity <T : Entity> (
-    val clazz : Class<T>,
-    val location : Location,
-    val init : (T) -> Unit = {},
-    val update : (T) -> Unit = {}
+/**
+ * A template describing how to spawn and update an entity instance when
+ * rendering.  The vanilla display entities are spawned directly in the world
+ * and updated every tick by the renderer.
+ */
+class RenderEntity<T : Entity>(
+    val type: EntityType<T>,
+    val level: Level,
+    val position: Vec3,
+    val init: (T) -> Unit = {},
+    val update: (T) -> Unit = {},
 )
 
+/**
+ * A collection of renderable entities keyed by an arbitrary id.  Nested groups
+ * are flattened using a composite key so that callers can build complex
+ * hierarchies of entities to render.
+ */
 class RenderEntityGroup {
     val items = mutableMapOf<Any, RenderEntity<out Entity>>()
 
@@ -24,51 +36,47 @@ class RenderEntityGroup {
         items[id] = item
     }
 
-    fun add(id: Any, item: RenderEntityGroup) {
-        for ((subId, part) in item.items) {
+    fun add(id: Any, group: RenderEntityGroup) {
+        for ((subId, part) in group.items) {
             items[id to subId] = part
         }
     }
 }
 
+/** Create a [BlockDisplay] render entity. */
 fun blockRenderEntity(
-    location: Location,
+    level: Level,
+    position: Vec3,
     init: (BlockDisplay) -> Unit = {},
-    update: (BlockDisplay) -> Unit = {}
+    update: (BlockDisplay) -> Unit = {},
 ) = RenderEntity(
-    clazz = BlockDisplay::class.java,
-    location = location,
+    type = EntityType.BLOCK_DISPLAY,
+    level = level,
+    position = position,
     init = init,
-    update = update
+    update = update,
 )
 
-fun blockRenderEntity(
-    world: World,
-    position: Vector,
-    init: (BlockDisplay) -> Unit = {},
-    update: (BlockDisplay) -> Unit = {}
-) = RenderEntity(
-    clazz = BlockDisplay::class.java,
-    location = position.toLocation(world),
-    init = init,
-    update = update
-)
-
+/**
+ * Create a line rendered as a scaled [BlockDisplay].  The line is represented
+ * by a unit cube scaled and rotated so that the Z axis follows the provided
+ * vector.
+ */
 fun lineRenderEntity(
-    world: World,
-    position: Vector,
-    vector: Vector,
-    upVector: Vector = if (vector.x + vector.z != 0.0) UP_VECTOR else FORWARD_VECTOR,
+    level: Level,
+    position: Vec3,
+    vector: Vec3,
+    upVector: Vec3 = if (vector.x + vector.z != 0.0) UP_VECTOR else FORWARD_VECTOR,
     thickness: Float = .1f,
     interpolation: Int = 1,
     init: (BlockDisplay) -> Unit = {},
-    update: (BlockDisplay) -> Unit = {}
+    update: (BlockDisplay) -> Unit = {},
 ) = blockRenderEntity(
-    world = world,
+    level = level,
     position = position,
     init = {
-        it.teleportDuration = interpolation
-        it.interpolationDuration = interpolation
+        it.setTeleportDuration(interpolation)
+        it.setInterpolationDuration(interpolation)
         init(it)
     },
     update = {
@@ -78,52 +86,42 @@ fun lineRenderEntity(
 
         it.applyTransformationWithInterpolation(matrix)
         update(it)
-    }
+    },
 )
 
+/** Create a [TextDisplay] render entity. */
 fun textRenderEntity(
-    location: Location,
+    level: Level,
+    position: Vec3,
     text: String,
     interpolation: Int,
     init: (TextDisplay) -> Unit = {},
     update: (TextDisplay) -> Unit = {},
 ) = RenderEntity(
-    clazz = TextDisplay::class.java,
-    location = location,
+    type = EntityType.TEXT_DISPLAY,
+    level = level,
+    position = position,
     init = {
-        it.teleportDuration = interpolation
-        it.billboard = Display.Billboard.CENTER
+        it.setTeleportDuration(interpolation)
+        it.setInterpolationDuration(interpolation)
+        it.setBillboard(Display.Billboard.CENTER)
         init(it)
     },
     update = {
-        it.text = text
+        it.setText(Component.literal(text))
         update(it)
-    }
+    },
 )
 
-fun textRenderEntity(
-    world: World,
-    position: Vector,
-    text: String,
-    interpolation: Int,
-    init: (TextDisplay) -> Unit = {},
-    update: (TextDisplay) -> Unit = {},
-) = textRenderEntity(
-    location = position.toLocation(world),
-    text = text,
-    interpolation = interpolation,
-    init = init,
-    update = update
-)
-
-class SingleEntityRenderer<T : Entity>: Closeable {
+/** Renderer for a single entity instance. */
+class SingleEntityRenderer<T : Entity> : Closeable {
     var entity: T? = null
 
     fun render(part: RenderEntity<T>) {
-        entity = (entity ?: spawnEntity(part.location, part.clazz) {
+        entity = (entity ?: spawnEntity(part.level, part.position, part.type) {
             part.init(it)
         }).apply {
-            this.teleport(part.location)
+            this.moveTo(part.position.x, part.position.y, part.position.z, this.yRot, this.xRot)
             part.update(this)
         }
     }
@@ -133,14 +131,14 @@ class SingleEntityRenderer<T : Entity>: Closeable {
     }
 
     override fun close() {
-        entity?.remove()
+        entity?.discard()
         entity = null
     }
 }
 
-class GroupEntityRenderer: Closeable {
+/** Renderer that maintains a group of entities keyed by id. */
+class GroupEntityRenderer : Closeable {
     val rendered = mutableMapOf<Any, Entity>()
-
     private val used = mutableSetOf<Any>()
 
     fun detachEntity(id: Any) {
@@ -149,7 +147,7 @@ class GroupEntityRenderer: Closeable {
 
     override fun close() {
         for (entity in rendered.values) {
-            entity.remove()
+            entity.discard()
         }
         rendered.clear()
         used.clear()
@@ -162,36 +160,39 @@ class GroupEntityRenderer: Closeable {
 
         val toRemove = rendered.keys - used
         for (key in toRemove) {
-            val entity = rendered[key]!!
-            entity.remove()
+            rendered[key]?.discard()
             rendered.remove(key)
         }
         used.clear()
     }
 
-    fun <T: Entity>render(part: RenderEntity<T>) {
+    fun <T : Entity> render(part: RenderEntity<T>) {
         val group = RenderEntityGroup().apply { add(0, part) }
         render(group)
     }
 
-    private fun <T: Entity>renderPart(id: Any, template: RenderEntity<T>) {
+    private fun <T : Entity> renderPart(id: Any, template: RenderEntity<T>) {
         used.add(id)
 
         val oldEntity = rendered[id]
         if (oldEntity != null) {
-            // check if the entity is of the same type
-            if (oldEntity.type.entityClass == template.clazz) {
-                oldEntity.teleport(template.location)
+            if (oldEntity.type == template.type) {
+                oldEntity.moveTo(
+                    template.position.x,
+                    template.position.y,
+                    template.position.z,
+                    oldEntity.yRot,
+                    oldEntity.xRot
+                )
                 @Suppress("UNCHECKED_CAST")
                 template.update(oldEntity as T)
                 return
             }
-
-            oldEntity.remove()
+            oldEntity.discard()
             rendered.remove(id)
         }
 
-        val entity = spawnEntity(template.location, template.clazz) {
+        val entity = spawnEntity(template.level, template.position, template.type) {
             template.init(it)
             template.update(it)
         }
@@ -199,31 +200,3 @@ class GroupEntityRenderer: Closeable {
     }
 }
 
-
-class MultiEntityRenderer: Closeable {
-    private val renderer = GroupEntityRenderer()
-    private var group = RenderEntityGroup()
-
-    fun render(id: Any, group: RenderEntityGroup) {
-        this.group.add(id, group)
-    }
-
-    fun render(id: Any, entity: RenderEntity<out Entity>) {
-        this.group.add(id, entity)
-    }
-
-    fun flush() {
-        renderer.render(group)
-        group = RenderEntityGroup()
-    }
-
-    val rendered: Map<Any, Entity> get() = renderer.rendered
-
-    fun detach(id: Any) {
-        renderer.detachEntity(id)
-    }
-
-    override fun close() {
-        renderer.close()
-    }
-}
