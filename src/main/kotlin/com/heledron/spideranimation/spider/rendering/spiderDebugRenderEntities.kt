@@ -5,7 +5,6 @@ import com.heledron.spideranimation.utilities.*
 import net.minecraft.world.entity.Display
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.Vec3
-import org.bukkit.util.Vector
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
@@ -147,7 +146,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
 
     // Render preferred orientation
     if (spider.options.debug.preferredOrientation) {
-        fun renderEntity(orientation: Quaternionf, direction: Vector, thickness: Float, length: Float, block: net.minecraft.world.level.block.Block) = run {
+        fun renderEntity(orientation: Quaternionf, direction: Vec3, thickness: Float, length: Float, block: net.minecraft.world.level.block.Block) = run {
             val mTranslation = Vector3f(-1f, -1f, -1f).add(direction.toVector3f()).mul(.5f)
             val mScale = Vector3f(thickness, thickness, thickness).add(direction.toVector3f().mul(length))
 

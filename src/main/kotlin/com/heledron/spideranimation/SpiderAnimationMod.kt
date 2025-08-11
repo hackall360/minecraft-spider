@@ -79,6 +79,8 @@ class SpiderAnimationMod {
             // the Vec3 migration, so no marker is drawn until a replacement exists.
         }
 
+        AppState.chainVisualizer?.render()
+
         AppState.renderer.flush()
         AppState.target = null
     }
