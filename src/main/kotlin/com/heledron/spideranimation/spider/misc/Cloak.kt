@@ -3,15 +3,12 @@ package com.heledron.spideranimation.spider.misc
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.*
-import com.heledron.spideranimation.utilities.getBestMatchFromColor
-import com.heledron.spideranimation.utilities.getColorFromBlock
-import org.bukkit.*
-import org.bukkit.Color
-import org.bukkit.block.data.BlockData
-import org.bukkit.entity.Display
-import org.bukkit.util.RayTraceResult
-import org.bukkit.util.Vector
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Display
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.Vec3
 import java.util.WeakHashMap
 
 class Cloak(var  spider: Spider) : SpiderComponent {
@@ -19,10 +16,9 @@ class Cloak(var  spider: Spider) : SpiderComponent {
     val onCloakDamage = EventEmitter()
     val onToggle = EventEmitter()
 
-    // I'm using vectors so that we can do high-precision lerping.
-    // see toVector and toColor functions below.
-    private var cloakColor = WeakHashMap<Any, Vector>()
-    private var cloakOverride = WeakHashMap<Any, BlockData>()
+    // Store colours as Vec3 for high-precision transitions.
+    private var cloakColor = WeakHashMap<Any, Vec3>()
+    private var cloakOverride = WeakHashMap<Any, BlockState>()
     private var cloakGlitching = false
 
     init {
@@ -45,49 +41,48 @@ class Cloak(var  spider: Spider) : SpiderComponent {
         onToggle.emit()
     }
 
-    fun getPiece(id: Any, position: Vector, originalBlock: BlockData, originalBrightness: Display.Brightness?): Pair<BlockData, Display.Brightness?> {
+    fun getPiece(id: Any, position: Vec3, originalBlock: BlockState, originalBrightness: Display.Brightness?): Pair<BlockState, Display.Brightness?> {
         applyCloak(id, position, originalBlock, originalBrightness?.skyLight ?: 15)
 
         val override = cloakOverride[id]
         if (override != null) return override to Display.Brightness(0, 15)
 
         val cloakColor = cloakColor[id] ?: return originalBlock to originalBrightness
-        val match = getBestMatchFromColor(cloakColor.toColor(), spider.options.cloak.allowCustomBrightness)
-        return match.block to Display.Brightness(0, match.brightness)
+        val match = getBestMatchFromColor(cloakColor.toRGB(), spider.options.cloak.allowCustomBrightness)
+        return match.state to Display.Brightness(0, match.brightness)
     }
 
-    private fun applyCloak(id: Any, position: Vector, originalBlock: BlockData, originalBrightness: Int) {
-        val location = position.toLocation(spider.world)
+    private fun applyCloak(id: Any, position: Vec3, originalBlock: BlockState, originalBrightness: Int) {
+        val location = position
 
         if (cloakGlitching) return
 
-        fun groundCast(): RayTraceResult? {
-            return raycastGround(location, DOWN_VECTOR, 5.0)
+        fun groundCast(): BlockHitResult? {
+            return raycastGround(spider.world, location, DOWN_VECTOR, 5.0)
         }
 
-        fun cast(): RayTraceResult? {
+        fun cast(): BlockHitResult? {
             val targetPlayer = spider.world.players.firstOrNull() as? ServerPlayer ?: return groundCast()
 
             val eye = targetPlayer.eyePosition
-            val direction = location.toVector().subtract(Vector(eye.x, eye.y, eye.z))
-            val rayCast = raycastGround(location, direction, 30.0)
-            return rayCast
+            val direction = location.subtract(eye)
+            return raycastGround(spider.world, location, direction, 30.0)
         }
 
-        val originalColor = getColorFromBlock(originalBlock, originalBrightness)?.toVector() ?: return
+        val originalColor = getColorFromBlock(originalBlock, originalBrightness)?.toVec3() ?: return
         val currentColor = cloakColor[id] ?: originalColor
 
         val targetColor = run getTargetColor@{
             if (!active) return@getTargetColor originalColor
 
             val rayTrace = cast() ?: return@getTargetColor currentColor
-            val block = rayTrace.hitBlock?.blockData ?: return@getTargetColor currentColor
+            val block = spider.world.getBlockState(rayTrace.blockPos)
             val lightLevel = 15
-            getColorFromBlock(block, lightLevel)?.toVector() ?: currentColor
+            getColorFromBlock(block, lightLevel)?.toVec3() ?: currentColor
         }
 
 
-        val newColor = currentColor.clone()
+        val newColor = currentColor
             .lerp(targetColor, spider.options.cloak.lerpSpeed)
             .moveTowards(targetColor, spider.options.cloak.moveSpeed)
 
@@ -102,12 +97,12 @@ class Cloak(var  spider: Spider) : SpiderComponent {
         val originalColors = cloakColor.values.toList()
 
         val glitch = listOf(
-            { id: Any -> cloakOverride[id] = Material.LIGHT_BLUE_GLAZED_TERRACOTTA.createBlockData() },
-            { id: Any -> cloakOverride[id] = Material.CYAN_GLAZED_TERRACOTTA.createBlockData() },
-            { id: Any -> cloakOverride[id] = Material.WHITE_GLAZED_TERRACOTTA.createBlockData() },
-            { id: Any -> cloakOverride[id] = Material.GRAY_GLAZED_TERRACOTTA.createBlockData() },
+            { id: Any -> cloakOverride[id] = Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA.defaultBlockState() },
+            { id: Any -> cloakOverride[id] = Blocks.CYAN_GLAZED_TERRACOTTA.defaultBlockState() },
+            { id: Any -> cloakOverride[id] = Blocks.WHITE_GLAZED_TERRACOTTA.defaultBlockState() },
+            { id: Any -> cloakOverride[id] = Blocks.GRAY_GLAZED_TERRACOTTA.defaultBlockState() },
 
-            { id: Any -> cloakOverride[id] = null },
+            { id: Any -> cloakOverride.remove(id) },
             { id: Any -> cloakColor[id] = originalColors.random() },
         )
 
@@ -127,8 +122,8 @@ class Cloak(var  spider: Spider) : SpiderComponent {
             }
 
             scheduler.run {
-                cloakColor[id] = null
-                cloakOverride[id] = null
+                cloakColor.remove(id)
+                cloakOverride.remove(id)
             }
 
             if (Math.random() < 1.0 / 6) continue
@@ -137,13 +132,13 @@ class Cloak(var  spider: Spider) : SpiderComponent {
 
             for (i in 0 until  (Math.random() * 3).toInt()) {
                 scheduler.run {
-                    cloakOverride[id] = getBestMatchFromColor(originalColors.random().toColor(), spider.options.cloak.allowCustomBrightness).block
+                    cloakOverride[id] = getBestMatchFromColor(originalColors.random().toRGB(), spider.options.cloak.allowCustomBrightness).state
                 }
 
                 randomSleep(5, 15)
 
                 scheduler.run {
-                    cloakOverride[id] = null
+                    cloakOverride.remove(id)
                 }
                 scheduler.sleep(2L)
             }
@@ -174,13 +169,4 @@ class Cloak(var  spider: Spider) : SpiderComponent {
 //            transitioning.remove(id)
 //        }
 //    }
-}
-
-
-private fun Color.toVector(): Vector {
-    return Vector(this.red, this.green, this.blue)
-}
-
-private fun Vector.toColor(): Color {
-    return Color.fromRGB(x.toInt(), y.toInt(), z.toInt())
 }
