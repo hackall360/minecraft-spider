@@ -3,15 +3,18 @@ package com.heledron.spideranimation.spider.misc
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.*
-import org.bukkit.Material
-import org.bukkit.Sound
-import org.bukkit.entity.ArmorStand
-import org.bukkit.entity.Pig
-import org.bukkit.entity.Player
-import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
-import org.bukkit.event.vehicle.VehicleEnterEvent
-import org.bukkit.inventory.EquipmentSlot
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.entity.animal.Pig
+import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.item.Items
+import net.minecraft.world.phys.Vec3
+import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.event.entity.EntityMountEvent
+import net.minecraftforge.event.entity.player.PlayerInteractEvent
+import net.minecraftforge.eventbus.api.SubscribeEvent
 import org.bukkit.util.Vector
 import org.joml.Quaternionf
 import java.io.Closeable
@@ -22,89 +25,107 @@ class Mountable(val spider: Spider): SpiderComponent {
 
     var closable = mutableListOf<Closeable>()
 
-    fun getRider() = marker.entity?.passengers?.firstOrNull() as? Player
+    fun getRider() = marker.entity?.passengers?.firstOrNull() as? ServerPlayer
 
     init {
         closable += pig
         closable += marker
 
-        closable += onInteractEntity { player, entity, hand ->
-            val pigEntity = pig.entity
-            if (entity != pigEntity) return@onInteractEntity
-            if (hand != EquipmentSlot.HAND) return@onInteractEntity
+        val interactListener = object {
+            @SubscribeEvent
+            fun onInteract(event: PlayerInteractEvent.EntityInteract) {
+                val pigEntity = pig.entity ?: return
+                if (event.target != pigEntity) return
+                if (event.hand != InteractionHand.MAIN_HAND) return
 
-            // if right click with saddle, add saddle (automatic)
-            if (player.inventory.itemInMainHand.type == Material.SADDLE && !pigEntity.hasSaddle()) {
-                playSound(pigEntity.location, Sound.ENTITY_PIG_SADDLE, 1.0f, 1.0f)
-            }
+                val player = event.entity as? ServerPlayer ?: return
+                val stack = player.mainHandItem
 
-            // if right click with empty hand, remove saddle
-            if (player.inventory.itemInMainHand.type.isAir && getRider() == null) {
-                if (player.isSneaking) {
+                // if right click with saddle, add saddle (automatic)
+                if (stack.`is`(Items.SADDLE) && !pigEntity.isSaddled) {
+                    playSound(pigEntity.level(), pigEntity.position(), SoundEvents.PIG_SADDLE, 1.0f, 1.0f)
+                }
+
+                // if right click with empty hand, remove saddle
+                if (stack.isEmpty && getRider() == null && player.isShiftKeyDown) {
                     pigEntity.setSaddle(false)
                 }
             }
         }
+        MinecraftForge.EVENT_BUS.register(interactListener)
+        closable += Closeable { MinecraftForge.EVENT_BUS.unregister(interactListener) }
 
         // when player mounts the pig, switch them to the marker entity
-        closable += addEventListener(object : Listener {
-            @EventHandler
-            fun onMount(event: VehicleEnterEvent) {
-                if (event.vehicle != pig.entity) return
-                val player = event.entered
-                val marker = marker.entity ?: return
+        val mountListener = object {
+            @SubscribeEvent
+            fun onMount(event: EntityMountEvent) {
+                if (!event.isMounting) return
+                val pigEntity = pig.entity ?: return
+                if (event.entityBeingMounted != pigEntity) return
+                val player = event.entityMounting as? ServerPlayer ?: return
+                val markerEntity = marker.entity ?: return
 
-                event.isCancelled = true
-                marker.addPassenger(player)
+                event.isCanceled = true
+                markerEntity.addPassenger(player)
             }
-        })
+        }
+        MinecraftForge.EVENT_BUS.register(mountListener)
+        closable += Closeable { MinecraftForge.EVENT_BUS.unregister(mountListener) }
 
         closable += onServerTick {
             val player = getRider() ?: return@onServerTick
 
-            val input = Vector()
-            if (player.currentInput.isLeft) input.x += 1.0
-            if (player.currentInput.isRight) input.x -= 1.0
-            if (player.currentInput.isForward) input.z += 1.0
-            if (player.currentInput.isBackward) input.z -= 1.0
+            var input = Vec3(0.0, 0.0, 0.0)
+            if (player.input.left) input = input.add(1.0, 0.0, 0.0)
+            if (player.input.right) input = input.add(-1.0, 0.0, 0.0)
+            if (player.input.up) input = input.add(0.0, 0.0, 1.0)
+            if (player.input.down) input = input.add(0.0, 0.0, -1.0)
 
-            val rotation = Quaternionf().rotationYXZ(player.location.yawRadians(), .0f, .0f)
-            val direction = if (input.isZero) input else input.rotate(rotation).normalize()
+            val yaw = Math.toRadians(player.yRot.toDouble()).toFloat()
+            val rotation = Quaternionf().rotationYXZ(yaw, 0f, 0f)
+            val dirVec = if (input.lengthSqr() == 0.0) input else input.rotate(rotation).normalize()
 
-            spider.behaviour = DirectionBehaviour(spider, player.location.direction, direction)
+            val look = player.lookAngle
+            spider.behaviour = DirectionBehaviour(
+                spider,
+                Vector(look.x, look.y, look.z),
+                Vector(dirVec.x, dirVec.y, dirVec.z)
+            )
 
         }
     }
 
     override fun render() {
-        val location = spider.location().add(spider.velocity)
+        val location = Vector(spider.position.x, spider.position.y, spider.position.z).add(spider.velocity)
 
         val pigLocation = location.clone().add(Vector(.0, -.6, .0))
         val markerLocation = location.clone().add(Vector(.0, .3, .0))
 
         pig.render(RenderEntity(
-            clazz = Pig::class.java,
-            location = pigLocation,
+            type = EntityType.PIG,
+            level = spider.world,
+            position = Vec3(pigLocation.x, pigLocation.y, pigLocation.z),
             init = {
-                it.setGravity(false)
-                it.setAI(false)
+                it.setNoGravity(true)
+                it.setNoAi(true)
                 it.isInvisible = true
-                it.isInvulnerable = true
+                it.setInvulnerable(true)
                 it.isSilent = true
-                it.isCollidable = false
+                it.setNoPhysics(true)
             }
         ))
 
         marker.render(RenderEntity(
-            clazz = ArmorStand::class.java,
-            location = markerLocation,
+            type = EntityType.ARMOR_STAND,
+            level = spider.world,
+            position = Vec3(markerLocation.x, markerLocation.y, markerLocation.z),
             init = {
-                it.setGravity(false)
+                it.setNoGravity(true)
                 it.isInvisible = true
-                it.isInvulnerable = true
+                it.setInvulnerable(true)
                 it.isSilent = true
-                it.isCollidable = false
-                it.isMarker = true
+                it.setNoPhysics(true)
+                it.setMarker(true)
             },
             update = update@{
                 if (getRider() == null) return@update
@@ -112,7 +133,7 @@ class Mountable(val spider: Spider): SpiderComponent {
                 // This is the only way to preserve passengers when teleporting.
                 // Paper has a TeleportFlag, but it is not supported by Spigot.
                 // https://jd.papermc.io/paper/1.21/io/papermc/paper/entity/TeleportFlag.EntityState.html
-                runCommandSilently("execute as ${it.uniqueId} at @s run tp ${markerLocation.x} ${markerLocation.y} ${markerLocation.z}")
+                runCommandSilently("execute as ${it.uuid} at @s run tp ${markerLocation.x} ${markerLocation.y} ${markerLocation.z}")
             }
         ))
     }
