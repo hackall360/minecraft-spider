@@ -200,3 +200,36 @@ class GroupEntityRenderer : Closeable {
     }
 }
 
+/** Renderer that manages multiple [RenderEntityGroup] instances keyed by id. */
+class MultiEntityRenderer : Closeable {
+    private val groups = mutableMapOf<Any, GroupEntityRenderer>()
+    private val used = mutableSetOf<Any>()
+
+    /** Render the given [group] associated with [id]. */
+    fun render(id: Any, group: RenderEntityGroup) {
+        val renderer = groups.getOrPut(id) { GroupEntityRenderer() }
+        renderer.render(group)
+        used += id
+    }
+
+    /** Detach the renderer for the supplied [id], discarding any entities. */
+    fun detach(id: Any) {
+        groups.remove(id)?.close()
+    }
+
+    /** Remove any groups that were not rendered since the last [flush] call. */
+    fun flush() {
+        val toRemove = groups.keys - used
+        for (key in toRemove) {
+            groups.remove(key)?.close()
+        }
+        used.clear()
+    }
+
+    override fun close() {
+        for (renderer in groups.values) renderer.close()
+        groups.clear()
+        used.clear()
+    }
+}
+

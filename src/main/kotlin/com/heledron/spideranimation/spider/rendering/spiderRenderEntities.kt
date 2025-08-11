@@ -6,7 +6,6 @@ import com.heledron.spideranimation.utilities.Brightness
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.Vec3
-import org.bukkit.util.Vector
 import org.joml.Matrix4f
 import org.joml.Vector4f
 
@@ -31,7 +30,6 @@ fun spiderRenderEntities(spider: Spider): RenderEntityGroup {
     val transform = Matrix4f().rotate(spider.orientation)
     group.add(spider.body, modelToRenderEntity(spider, spider.position, spider.options.bodyPlan.bodyModel, transform))
 
-
     for ((legIndex, leg) in spider.body.legs.withIndex()) {
         val chain = leg.chain
 
@@ -43,7 +41,6 @@ fun spiderRenderEntities(spider: Spider): RenderEntityGroup {
 
             val segmentTransform = Matrix4f().rotate(rotation)
             group.add(legIndex to segmentIndex, modelToRenderEntity(spider, parent, segmentPlan.model, segmentTransform))
-
         }
     }
 
@@ -52,7 +49,7 @@ fun spiderRenderEntities(spider: Spider): RenderEntityGroup {
 
 private fun modelToRenderEntity(
     spider: Spider,
-    position: Vector,
+    position: Vec3,
     model: DisplayModel,
     transformation: Matrix4f
 ): RenderEntityGroup {
@@ -65,15 +62,14 @@ private fun modelToRenderEntity(
     return group
 }
 
-
 private fun modelPieceToRenderEntity(
     spider: Spider,
-    position: Vector,
+    position: Vec3,
     piece: BlockDisplayModelPiece,
     transformation: Matrix4f,
 ) = blockRenderEntity(
     level = spider.world,
-    position = position.toVec3(),
+    position = position,
     init = {
         it.setTeleportDuration(1)
         it.setInterpolationDuration(1)
@@ -84,12 +80,13 @@ private fun modelPieceToRenderEntity(
 
         val cloak = if (piece.tags.contains("cloak")) {
             val relative = transform.transform(Vector4f(.5f, .5f, .5f, 1f))
-            val piecePosition = position.clone()
-            piecePosition.x += relative.x
-            piecePosition.y += relative.y
-            piecePosition.z += relative.z
+            val piecePosition = Vec3(
+                position.x + relative.x.toDouble(),
+                position.y + relative.y.toDouble(),
+                position.z + relative.z.toDouble(),
+            )
 
-            spider.cloak.getPiece(piece, piecePosition.toVec3(), piece.block, piece.brightness)
+            spider.cloak.getPiece(piece, piecePosition, piece.block, piece.brightness)
         } else null
 
         if (cloak != null) {
@@ -99,5 +96,5 @@ private fun modelPieceToRenderEntity(
             it.blockState = piece.block
             it.setBrightness(piece.brightness)
         }
-    }
+    },
 )

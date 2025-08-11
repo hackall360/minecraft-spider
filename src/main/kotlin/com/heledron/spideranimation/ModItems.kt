@@ -133,7 +133,7 @@ class ChainVisStraightenItem(properties: Properties) : Item(properties) {
         if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
         val chain = AppState.chainVisualizer ?: return InteractionResultHolder.pass(player.getItemInHand(hand))
         level.playSound(null, player.x, player.y, player.z, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0f, 2.0f)
-        chain.straighten(chain.target?.toVector() ?: return InteractionResultHolder.pass(player.getItemInHand(hand)))
+        chain.straighten(chain.target ?: return InteractionResultHolder.pass(player.getItemInHand(hand)))
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide)
     }
 }
@@ -169,7 +169,7 @@ class LaserPointerItem(properties: Properties) : Item(properties) {
                 val targetVal = result.location
                 AppState.target = targetVal
                 AppState.chainVisualizer?.let {
-                    it.target = org.bukkit.Location(it.world, targetVal.x, targetVal.y, targetVal.z)
+                    it.target = targetVal
                     it.resetIterator()
                 }
                 AppState.spider?.let { it.behaviour = TargetBehaviour(it, targetVal.toVector(), it.lerpedGait.bodyHeight) }
