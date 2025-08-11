@@ -3,19 +3,23 @@ package com.heledron.spideranimation.spider.rendering
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.utilities.*
 import com.heledron.spideranimation.utilities.Brightness
+import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Blocks
-import org.bukkit.Location
+import net.minecraft.world.phys.Vec3
 import org.bukkit.util.Vector
 import org.joml.Matrix4f
 import org.joml.Vector4f
 
 fun targetRenderEntity(
-    location: Location
+    level: Level,
+    position: Vec3,
 ) = blockRenderEntity(
-    location = location,
+    level = level,
+    position = position,
     init = {
         it.blockState = Blocks.REDSTONE_BLOCK.defaultBlockState()
-        it.teleportDuration = 1
+        it.setTeleportDuration(1)
+        it.setInterpolationDuration(1)
         it.setBrightness(Brightness(15, 15))
         it.transformation = centredTransform(.25f, .25f, .25f)
     }
@@ -67,12 +71,12 @@ private fun modelPieceToRenderEntity(
     position: Vector,
     piece: BlockDisplayModelPiece,
     transformation: Matrix4f,
-//    cloakID: Any
 ) = blockRenderEntity(
-    location = position.toLocation(spider.world),
+    level = spider.world,
+    position = position.toVec3(),
     init = {
-        it.teleportDuration = 1
-        it.interpolationDuration = 1
+        it.setTeleportDuration(1)
+        it.setInterpolationDuration(1)
     },
     update = {
         val transform = Matrix4f(transformation).mul(piece.transform)

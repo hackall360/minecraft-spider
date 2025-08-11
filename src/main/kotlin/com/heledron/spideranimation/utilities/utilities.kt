@@ -158,25 +158,14 @@ fun matrixFromTransform(transformation: org.joml.Transformation): Matrix4f {
     return matrix
 }
 
-fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(transformation: org.joml.Transformation) {
+fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(matrix: Matrix4f) {
+    val transformation = com.mojang.math.Transformation(matrix)
     if (this.transformation == transformation) return
     this.transformation = transformation
-    this.interpolationDelay = 0
+    this.interpolationStartDelta = 0
 }
 
-fun net.minecraft.world.entity.Display.applyTransformationWithInterpolation(matrix: Matrix4f) {
-    val oldTransform = this.transformation
-    this.transformation = net.minecraft.util.Mth.quatFromXYZ(0f,0f,0f) // placeholder
-    if (oldTransform == this.transformation) return
-      this.interpolationDelay = 0
-      }
-
 fun net.minecraft.world.entity.Display.setBrightness(brightness: Brightness?) {
-    if (brightness == null) {
-        this.setBlockLightLevel(0)
-        this.setSkyLightLevel(0)
-    } else {
-        this.setBlockLightLevel(brightness.block)
-        this.setSkyLightLevel(brightness.sky)
-    }
+    val value = brightness?.let { net.minecraft.world.entity.Display.Brightness(it.block, it.sky) }
+    this.brightnessOverride = value
 }

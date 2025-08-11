@@ -2,6 +2,7 @@ package com.heledron.spideranimation.utilities
 
 import net.minecraft.world.phys.Vec3
 import org.joml.*
+import org.bukkit.util.Vector
 import java.lang.Math
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -58,6 +59,8 @@ fun Vec3.toVector3f(): Vector3f = Vector3f(this.x.toFloat(), this.y.toFloat(), t
 fun Vector3f.toVec3(): Vec3 = Vec3(this.x.toDouble(), this.y.toDouble(), this.z.toDouble())
 
 fun Vector3d.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
+
+fun Vector.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
 
 fun Vec3.rotateAroundY(angle: Double, origin: Vec3): Vec3 {
     val translated = this.subtract(origin)
