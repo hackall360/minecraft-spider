@@ -1,8 +1,10 @@
 package com.heledron.spideranimation.spider.configuration
 
 import com.heledron.spideranimation.utilities.playSound
-import org.bukkit.Sound
-import org.bukkit.util.Vector
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.Vec3
 import kotlin.random.Random
 
 class SpiderOptions {
@@ -27,7 +29,7 @@ class SpiderOptions {
 
 class SoundOptions {
     var step = SoundPlayer(
-        sound = Sound.BLOCK_NETHERITE_BLOCK_STEP,
+        sound = SoundEvents.NETHERITE_BLOCK_STEP,
         volume = .3f,
         pitch = 1.0f
     )
@@ -35,15 +37,15 @@ class SoundOptions {
 
 
 class SoundPlayer(
-    val sound: Sound,
+    val sound: SoundEvent,
     val volume: Float,
     val pitch: Float,
     val volumeVary: Float = 0.1f,
     val pitchVary: Float = 0.1f
 ) {
-    fun play(world: org.bukkit.World, position: Vector) {
+    fun play(level: Level, position: Vec3) {
         val volume = volume + Random.nextFloat() * volumeVary
         val pitch = pitch + Random.nextFloat() * pitchVary
-        world.playSound(position, sound, volume, pitch)
+        playSound(level, position, sound, volume, pitch)
     }
 }
