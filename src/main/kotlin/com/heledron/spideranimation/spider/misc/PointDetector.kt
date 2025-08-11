@@ -4,25 +4,25 @@ import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.spider.body.Leg
 import com.heledron.spideranimation.utilities.lookingAtPoint
-import org.bukkit.Location
-import org.bukkit.entity.Player
+import com.heledron.spideranimation.utilities.toVec3
+import net.minecraft.server.level.ServerPlayer
 
 class PointDetector(val spider: Spider) : SpiderComponent {
     var selectedLeg: Leg? = null
-    var player: Player? = null
+    var player: ServerPlayer? = null
 
     override fun update() {
         val player = player
-        selectedLeg = if (player !== null) getLeg(player.eyeLocation) else null
+        selectedLeg = if (player != null) getLeg(player) else null
     }
 
-    private fun getLeg(location: Location): Leg? {
-        if (spider.world != location.world) return null
+    private fun getLeg(player: ServerPlayer): Leg? {
+        if (spider.world != player.level()) return null
 
-        val locationAsVector = location.toVector()
-        val direction = location.direction
+        val eye = player.eyePosition
+        val direction = player.lookAngle
         for (leg in spider.body.legs) {
-            val lookingAt = lookingAtPoint(locationAsVector, direction, leg.endEffector, spider.lerpedGait.bodyHeight * .15)
+            val lookingAt = lookingAtPoint(eye, direction, leg.endEffector.toVec3(), spider.lerpedGait.bodyHeight * .15)
             if (lookingAt) return leg
         }
         return null

@@ -62,6 +62,8 @@ fun Vector3d.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
 
 fun Vector.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
 
+fun Vec3.toVector(): Vector = Vector(this.x, this.y, this.z)
+
 fun Vec3.rotateAroundY(angle: Double, origin: Vec3): Vec3 {
     val translated = this.subtract(origin)
     val sin = kotlin.math.sin(angle)
