@@ -1,87 +1,77 @@
 package com.heledron.spideranimation.utilities
 
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 import org.joml.Quaternionf
 
-
 class KinematicChain(
-        val root: Vector,
-        val segments: List<ChainSegment>
+    var root: Vec3,
+    val segments: List<ChainSegment>,
 ) {
     var maxIterations = 20
     var tolerance = 0.01
 
-    fun fabrik(target: Vector) {
+    fun fabrik(target: Vec3) {
         for (i in 0 until maxIterations) {
             fabrikForward(target)
             fabrikBackward()
-
-            if (getEndEffector().distanceSquared(target) < tolerance) {
+            if (getEndEffector().distanceToSqr(target) < tolerance) {
                 break
             }
         }
     }
 
     fun straightenDirection(rotation: Quaternionf) {
-        val position = root.clone()
+        var position = root
         for (segment in segments) {
-            val initDirection = segment.initDirection.clone().rotate(rotation)
-            position.add(initDirection.multiply(segment.length))
-            segment.position.copy(position)
+            val initDirection = segment.initDirection.rotate(rotation)
+            position = position.add(initDirection.scale(segment.length))
+            segment.position = position
         }
     }
 
-    fun fabrikForward(newPosition: Vector) {
+    fun fabrikForward(newPosition: Vec3) {
         val lastSegment = segments.last()
-        lastSegment.position.copy(newPosition)
-
+        lastSegment.position = newPosition
         for (i in segments.size - 1 downTo 1) {
             val previousSegment = segments[i]
             val segment = segments[i - 1]
-
-            moveSegment(segment.position, previousSegment.position, previousSegment.length)
+            segment.position = moveSegment(segment.position, previousSegment.position, previousSegment.length)
         }
     }
 
     fun fabrikBackward() {
-        moveSegment(segments.first().position, root, segments.first().length)
-
+        segments[0].position = moveSegment(segments.first().position, root, segments.first().length)
         for (i in 1 until segments.size) {
             val previousSegment = segments[i - 1]
             val segment = segments[i]
-
-            moveSegment(segment.position, previousSegment.position, segment.length)
+            segment.position = moveSegment(segment.position, previousSegment.position, segment.length)
         }
     }
 
-    fun moveSegment(point: Vector, pullTowards: Vector, segment: Double) {
-        val direction = pullTowards.clone().subtract(point).normalize()
-        point.copy(pullTowards).subtract(direction.multiply(segment))
+    fun moveSegment(point: Vec3, pullTowards: Vec3, segment: Double): Vec3 {
+        val direction = pullTowards.subtract(point).normalize()
+        return pullTowards.subtract(direction.scale(segment))
     }
 
-    fun getEndEffector(): Vector {
+    fun getEndEffector(): Vec3 {
         return segments.last().position
     }
 
-    fun getVectors(): List<Vector> {
+    fun getVectors(): List<Vec3> {
         return segments.mapIndexed { i, segment ->
             val previous = segments.getOrNull(i - 1)?.position ?: root
-            segment.position.clone().subtract(previous)
+            segment.position.subtract(previous)
         }
     }
 
     fun getRelativeRotations(pivot: Quaternionf): List<Quaternionf> {
         val vectors = getVectors()
-
         val firstEuler = vectors.first().getRotationAroundAxis(pivot)
         val firstRotation = Quaternionf(pivot).rotateYXZ(firstEuler.y, firstEuler.x, .0f)
-
         val rotations = vectors.mapIndexed { i, current ->
             val previous = vectors.getOrNull(i - 1) ?: return@mapIndexed firstRotation
-
             Quaternionf().rotationTo(previous.toVector3f(), current.toVector3f())
         }
-
         return rotations
     }
 
@@ -97,11 +87,15 @@ class KinematicChain(
 }
 
 class ChainSegment(
-        var position: Vector,
-        var length: Double,
-        var initDirection: Vector,
+    var position: Vec3,
+    var length: Double,
+    var initDirection: Vec3,
 ) {
     fun clone(): ChainSegment {
-        return ChainSegment(position.clone(), length, initDirection.clone())
+        return ChainSegment(
+            Vec3(position.x, position.y, position.z),
+            length,
+            Vec3(initDirection.x, initDirection.y, initDirection.z),
+        )
     }
 }
