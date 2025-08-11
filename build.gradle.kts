@@ -1,6 +1,6 @@
 plugins {
     java
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "1.9.24"
     id("net.minecraftforge.gradle") version "[6.0,6.2)"
 }
 
@@ -60,6 +60,11 @@ repositories {
 dependencies {
     minecraft("net.minecraftforge:forge:1.20.1-47.3.0")
     implementation(kotlin("stdlib"))
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 sourceSets.main.get().resources.srcDir("src/generated/resources")

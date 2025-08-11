@@ -1,7 +1,6 @@
 package com.heledron.spideranimation.utilities
 
 import net.minecraft.world.phys.Vec3
-import org.bukkit.Location
 import org.joml.*
 import java.lang.Math
 import kotlin.math.abs
@@ -95,12 +94,13 @@ fun Vec3.getYaw(): Float {
     return yaw.toFloat()
 }
 
-fun Location.yawRadians(): Float {
-    return -toRadians(yaw)
+
+fun Float.yawRadians(): Float {
+    return -toRadians(this)
 }
 
-fun Location.pitchRadians(): Float {
-    return toRadians(pitch)
+fun Float.pitchRadians(): Float {
+    return toRadians(this)
 }
 
 //fun Quaterniond.rotationToYX(fromDir: Vector3d, toDir: Vector3d): Quaterniond {
