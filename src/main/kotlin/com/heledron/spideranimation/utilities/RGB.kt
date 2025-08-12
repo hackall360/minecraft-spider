@@ -5,7 +5,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
- * Simple RGB container used instead of Bukkit's [org.bukkit.Color].
+ * Simple RGB container used instead of the limited [net.minecraft.world.item.DyeColor] palette.
  */
 data class RGB(val r: Int, val g: Int, val b: Int) {
     /** Scale the colour to the provided Minecraft brightness level (0-15). */

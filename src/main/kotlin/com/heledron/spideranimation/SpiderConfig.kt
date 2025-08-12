@@ -7,9 +7,8 @@ import net.minecraftforge.fml.config.ModConfig
 import net.minecraftforge.fml.event.config.ModConfigEvent
 
 /**
- * Forge configuration for the Spider Animation mod.  This replaces the
- * previous Bukkit based configuration by persisting options in a standard
- * Forge config file.
+ * Forge configuration for the Spider Animation mod, persisting options in a
+ * standard Forge config file.
  */
 object SpiderConfig {
     private val builder = ForgeConfigSpec.Builder()
