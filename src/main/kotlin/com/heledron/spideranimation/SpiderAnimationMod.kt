@@ -87,6 +87,7 @@ class SpiderAnimationMod {
 
     @SubscribeEvent
     fun onEntityJoin(event: EntityJoinLevelEvent) {
+        if (event.level.isClientSide) return
         if (!event.entity.tags.contains("spider.chain_visualizer")) return
         val segmentPlans = AppState.options.bodyPlan.legs.lastOrNull()?.segments ?: return
         val level = event.level as? ServerLevel ?: return
