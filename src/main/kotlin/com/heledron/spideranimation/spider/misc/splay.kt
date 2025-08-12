@@ -2,11 +2,12 @@ package com.heledron.spideranimation.spider.misc
 
 import com.heledron.spideranimation.AppState
 import com.heledron.spideranimation.utilities.*
+import net.minecraft.world.entity.Display.BlockDisplay
 import net.minecraft.world.phys.Vec3
-import org.bukkit.entity.BlockDisplay
-import org.bukkit.util.Transformation
+import org.joml.Transformation
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import com.mojang.math.Transformation as MojangTransformation
 import java.io.Closeable
 import kotlin.random.Random
 
@@ -37,7 +38,7 @@ fun splay() {
         if (entity !is BlockDisplay) continue
         entities += entity
         AppState.renderer.detach(id)
-        AppState.closeables += Closeable { entity.remove() }
+        AppState.closeables += Closeable { entity.discard() }
     }
 
     AppState.spider = null
@@ -56,19 +57,20 @@ fun splay() {
     }
 
     for ((i, entity) in entities.withIndex().shuffled()) {
-        val offset = Vec3(entity.location.x, entity.location.y, entity.location.z).subtract(spider.position)
+        val offset = entity.position().subtract(spider.position)
 
         // normalize position
-        entity.teleportDuration = 0
-        entity.interpolationDuration = 0
-        entity.interpolationDelay = 100
+        entity.setTeleportDuration(0)
+        entity.setInterpolationDuration(0)
+        entity.setInterpolationDelay(100)
 
-        val transformation = entity.transformation
+        val transformation = Transformation(entity.transformation.matrix)
         runLater(2) {
-            entity.teleport(spider.position.toLocation(spider.world))
+            entity.absMoveTo(spider.position.x, spider.position.y, spider.position.z)
 
             transformation.translation.add(offset.toVector3f())
-            entity.transformation = transformation
+            entity.transformation = MojangTransformation(matrixFromTransform(transformation))
+            entity.interpolationStartDelta = 0
         }
 
         runLater(3L + i / 4) {
@@ -78,7 +80,7 @@ fun splay() {
 }
 
 private fun splay(entity: BlockDisplay) {
-    val targetTransformation = entity.transformation
+    val targetTransformation = Transformation(entity.transformation.matrix)
     targetTransformation.translation.apply {
         normalize().mul(Random.nextDouble(1.0, 3.0).toFloat())
     }
@@ -86,16 +88,19 @@ private fun splay(entity: BlockDisplay) {
     targetTransformation.leftRotation.identity()
     targetTransformation.rightRotation.identity()
 
-    entity.interpolationDuration = 1
-    entity.interpolationDelay = 0
+    entity.setInterpolationDuration(1)
+    entity.setInterpolationDelay(0)
 
     var lerpAmount = .0f
     interval(0, 1) {
         lerpAmount = lerpAmount.moveTowards(1f, .1f)
 
         val eased = lerpAmount * lerpAmount * (3 - 2 * lerpAmount)
-        entity.transformation = entity.transformation.lerp(targetTransformation, eased)
-        entity.interpolationDelay = 0
+        val current = Transformation(entity.transformation.matrix)
+        val result = current.lerp(targetTransformation, eased)
+        entity.transformation = MojangTransformation(matrixFromTransform(result))
+        entity.setInterpolationDelay(0)
+        entity.interpolationStartDelta = 0
 
         if (lerpAmount >= 1) it.close()
     }
