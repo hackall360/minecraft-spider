@@ -6,13 +6,12 @@ import com.heledron.spideranimation.spider.body.Leg
 import com.heledron.spideranimation.spider.configuration.SoundPlayer
 import com.heledron.spideranimation.utilities.playSound
 import com.heledron.spideranimation.utilities.spawnParticle
-import com.heledron.spideranimation.utilities.toVec3
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.material.Fluids
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 import java.io.Closeable
 import java.util.*
 import kotlin.random.Random
@@ -57,12 +56,12 @@ class SoundsAndParticles(val spider: Spider) : SpiderComponent {
                 val isUnderWater = isInWater(leg.endEffector)
                 val sound = if (isUnderWater) underwaterStepSound else spider.options.sound.step
 
-                sound.play(spider.world, leg.endEffector.toVec3())
+                sound.play(spider.world, leg.endEffector)
             }
         }
     }
 
-    private fun isInWater(position: Vector): Boolean {
+    private fun isInWater(position: Vec3): Boolean {
         val blockPos = BlockPos(position.x.toInt(), position.y.toInt(), position.z.toInt())
         val state = spider.world.getBlockState(blockPos)
         return state.fluidState.type == Fluids.WATER ||
@@ -90,19 +89,19 @@ class SoundsAndParticles(val spider: Spider) : SpiderComponent {
                 if (justEnteredWater) {
                     val volume = .3f
                     val pitch = 1.0f + Random.nextFloat() * 0.1f
-                    playSound(spider.world, leg.endEffector.toVec3(), SoundEvents.PLAYER_SPLASH, volume, pitch)
+                    playSound(spider.world, leg.endEffector, SoundEvents.PLAYER_SPLASH, volume, pitch)
                     timeSinceLastSound = 0
                 }
                 else if (justExitedWater) {
                     val volume = .3f
                     val pitch = 1f + Random.nextFloat() * 0.1f
-                    playSound(spider.world, leg.endEffector.toVec3(), SoundEvents.AMBIENT_UNDERWATER_EXIT, volume, pitch)
+                    playSound(spider.world, leg.endEffector, SoundEvents.AMBIENT_UNDERWATER_EXIT, volume, pitch)
                     timeSinceLastSound = 0
                 }
                 else if (justBegunMoving && isUnderWater) {
                     val volume = .3f
                     val pitch = .7f + Random.nextFloat() * 0.1f
-                    playSound(spider.world, leg.endEffector.toVec3(), SoundEvents.PLAYER_SWIM, volume, pitch)
+                    playSound(spider.world, leg.endEffector, SoundEvents.PLAYER_SWIM, volume, pitch)
                     timeSinceLastSound = 0
                 }
             }
@@ -113,7 +112,7 @@ class SoundsAndParticles(val spider: Spider) : SpiderComponent {
             for (segment in leg.chain.segments) {
                 val segmentIsUnderWater = isInWater(segment.position)
 
-                val location = segment.position.clone().add(0.0, -0.1, 0.0).toVec3()
+                val location = segment.position.add(0.0, -0.1, 0.0)
 
                 if (segmentIsUnderWater) {
                     if (justEnteredWater || justExitedWater) {

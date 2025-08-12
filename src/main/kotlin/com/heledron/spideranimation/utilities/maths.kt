@@ -60,6 +60,12 @@ fun Vector3f.toVec3(): Vec3 = Vec3(this.x.toDouble(), this.y.toDouble(), this.z.
 
 fun Vector3d.toVec3(): Vec3 = Vec3(this.x, this.y, this.z)
 
+fun Vec3.clone(): Vec3 = Vec3(this.x, this.y, this.z)
+
+fun Vec3.setY(value: Double): Vec3 = Vec3(this.x, value, this.z)
+
+val Vec3.isZero: Boolean get() = this.x == 0.0 && this.y == 0.0 && this.z == 0.0
+
 fun Vec3.rotateAroundY(angle: Double, origin: Vec3): Vec3 {
     val translated = this.subtract(origin)
     val sin = kotlin.math.sin(angle)

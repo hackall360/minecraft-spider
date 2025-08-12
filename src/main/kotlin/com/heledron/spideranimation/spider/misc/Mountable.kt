@@ -7,15 +7,14 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.animal.Pig
-import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.item.Items
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.entity.EntityMountEvent
 import net.minecraftforge.event.entity.player.PlayerInteractEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
-import org.bukkit.util.Vector
 import org.joml.Quaternionf
 import java.io.Closeable
 
@@ -89,23 +88,23 @@ class Mountable(val spider: Spider): SpiderComponent {
             val look = player.lookAngle
             spider.behaviour = DirectionBehaviour(
                 spider,
-                Vector(look.x, look.y, look.z),
-                Vector(input.x, input.y, input.z)
+                Vec3(look.x, look.y, look.z),
+                Vec3(input.x, input.y, input.z)
             )
 
         }
     }
 
     override fun render() {
-        val location = Vector(spider.position.x, spider.position.y, spider.position.z).add(spider.velocity)
+        val location = spider.position.add(spider.velocity)
 
-        val pigLocation = location.clone().add(Vector(.0, -.6, .0))
-        val markerLocation = location.clone().add(Vector(.0, .3, .0))
+        val pigLocation = location.add(Vec3(.0, -.6, .0))
+        val markerLocation = location.add(Vec3(.0, .3, .0))
 
         pig.render(RenderEntity(
             type = EntityType.PIG,
             level = spider.world,
-            position = Vec3(pigLocation.x, pigLocation.y, pigLocation.z),
+            position = pigLocation,
             init = {
                 it.setNoGravity(true)
                 it.setNoAi(true)
@@ -119,7 +118,7 @@ class Mountable(val spider: Spider): SpiderComponent {
         marker.render(RenderEntity(
             type = EntityType.ARMOR_STAND,
             level = spider.world,
-            position = Vec3(markerLocation.x, markerLocation.y, markerLocation.z),
+            position = markerLocation,
             init = {
                 it.setNoGravity(true)
                 it.isInvisible = true

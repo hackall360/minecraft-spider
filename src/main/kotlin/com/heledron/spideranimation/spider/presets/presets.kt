@@ -6,48 +6,48 @@ import com.heledron.spideranimation.spider.configuration.SegmentPlan
 import com.heledron.spideranimation.spider.configuration.SpiderOptions
 import com.heledron.spideranimation.utilities.FORWARD_VECTOR
 import net.minecraft.world.level.block.Blocks
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 
 
 private fun equalLength(segmentCount: Int, length: Double): List<SegmentPlan> {
     return List(segmentCount) { SegmentPlan(length, FORWARD_VECTOR) }
 }
 
-private fun BodyPlan.addLegPair(root: Vector, rest: Vector, segments: List<SegmentPlan>) {
-    legs += LegPlan(Vector( root.x, root.y, root.z), Vector( rest.x, rest.y, rest.z), segments)
-    legs += LegPlan(Vector(-root.x, root.y, root.z), Vector(-rest.x, rest.y, rest.z), segments.map { it.clone() })
+private fun BodyPlan.addLegPair(root: Vec3, rest: Vec3, segments: List<SegmentPlan>) {
+    legs += LegPlan(Vec3(root.x, root.y, root.z), Vec3(rest.x, rest.y, rest.z), segments)
+    legs += LegPlan(Vec3(-root.x, root.y, root.z), Vec3(-rest.x, rest.y, rest.z), segments.map { it.clone() })
 }
 
 fun biped(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
-    options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(1.0, .0, .0), equalLength(segmentCount, 1.0 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0, .0, .0), Vec3(1.0, .0, .0), equalLength(segmentCount, 1.0 * segmentLength))
       applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
 fun quadruped(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
-    options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(0.9,.0, 0.9), equalLength(segmentCount, 0.9 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0, .0, .0), Vector(1.0, .0, -1.1), equalLength(segmentCount, 1.2 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0, .0, .0), Vec3(0.9,.0, 0.9), equalLength(segmentCount, 0.9 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0, .0, .0), Vec3(1.0, .0, -1.1), equalLength(segmentCount, 1.2 * segmentLength))
       applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
 fun hexapod(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
-    options.bodyPlan.addLegPair(Vector(.0,.0,0.1), Vector(1.0,.0, 1.1), equalLength(segmentCount, 1.1 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0,.0,0.0), Vector(1.3,.0,-0.3), equalLength(segmentCount, 1.1 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0,.0,-.1), Vector(1.2,.0,-2.0), equalLength(segmentCount, 1.6 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0,0.1), Vec3(1.0,.0, 1.1), equalLength(segmentCount, 1.1 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0,0.0), Vec3(1.3,.0,-0.3), equalLength(segmentCount, 1.1 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0,-.1), Vec3(1.2,.0,-2.0), equalLength(segmentCount, 1.6 * segmentLength))
       applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
 
 fun octopod(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
-    options.bodyPlan.addLegPair(Vector(.0,.0,  .1), Vector(1.0, .0,  1.6), equalLength(segmentCount, 1.1 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0,.0,  .0), Vector(1.3, .0,  0.4), equalLength(segmentCount, 1.0 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0,.0, -.1), Vector(1.3, .0, -0.9), equalLength(segmentCount, 1.1 * segmentLength))
-    options.bodyPlan.addLegPair(Vector(.0,.0, -.2), Vector(1.1, .0, -2.5), equalLength(segmentCount, 1.6 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0,  .1), Vec3(1.0, .0,  1.6), equalLength(segmentCount, 1.1 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0,  .0), Vec3(1.3, .0,  0.4), equalLength(segmentCount, 1.0 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0, -.1), Vec3(1.3, .0, -0.9), equalLength(segmentCount, 1.1 * segmentLength))
+    options.bodyPlan.addLegPair(Vec3(.0,.0, -.2), Vec3(1.1, .0, -2.5), equalLength(segmentCount, 1.6 * segmentLength))
       applyLineLegModel(options.bodyPlan, Blocks.NETHERITE_BLOCK.defaultBlockState())
     return options
 }
@@ -71,8 +71,8 @@ private fun createRobotSegments(segmentCount: Int, lengthScale: Double) = List(s
 fun quadBot(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
     options.bodyPlan.bodyModel = SpiderTorsoModels.FLAT.model.clone()
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .2), rest = Vector(1.3 * 1.0,.0, 1.0), createRobotSegments(segmentCount, .9 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15,-.2), rest = Vector(1.3 * 1.1,.0,-1.2), createRobotSegments(segmentCount, 1.2 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .2), rest = Vec3(1.3 * 1.0,.0, 1.0), createRobotSegments(segmentCount, .9 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15,-.2), rest = Vec3(1.3 * 1.1,.0,-1.2), createRobotSegments(segmentCount, 1.2 * .7 * segmentLength))
     applyMechanicalLegModel(options.bodyPlan)
     return options
 }
@@ -80,9 +80,9 @@ fun quadBot(segmentCount: Int, segmentLength: Double): SpiderOptions {
 fun hexBot(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
     options.bodyPlan.bodyModel = SpiderTorsoModels.FLAT.model.clone()
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .2), rest = Vector(1.3 * 1.0,.0, 1.3), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .0), rest = Vector(1.3 * 1.2,.0,-0.1), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15,-.2), rest = Vector(1.3 * 1.1,.0,-1.6), createRobotSegments(segmentCount, 1.3 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .2), rest = Vec3(1.3 * 1.0,.0, 1.3), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .0), rest = Vec3(1.3 * 1.2,.0,-0.1), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15,-.2), rest = Vec3(1.3 * 1.1,.0,-1.6), createRobotSegments(segmentCount, 1.3 * .7 * segmentLength))
     applyMechanicalLegModel(options.bodyPlan)
     return options
 }
@@ -90,10 +90,10 @@ fun hexBot(segmentCount: Int, segmentLength: Double): SpiderOptions {
 fun octoBot(segmentCount: Int, segmentLength: Double): SpiderOptions {
     val options = SpiderOptions()
     options.bodyPlan.bodyModel = SpiderTorsoModels.FLAT.model.clone()
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .3), rest = Vector(1.3 * 1.0,.0, 1.3), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .1), rest = Vector(1.3 * 1.2,.0, 0.5), createRobotSegments(segmentCount, 1.0 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15, .1), rest = Vector(1.3 * 1.2,.0,-0.7), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
-    options.bodyPlan.addLegPair(root = Vector(.2,-.2 - .15,-.3), rest = Vector(1.3 * 1.1,.0,-1.6), createRobotSegments(segmentCount, 1.3 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .3), rest = Vec3(1.3 * 1.0,.0, 1.3), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .1), rest = Vec3(1.3 * 1.2,.0, 0.5), createRobotSegments(segmentCount, 1.0 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15, .1), rest = Vec3(1.3 * 1.2,.0,-0.7), createRobotSegments(segmentCount, 1.1 * .7 * segmentLength))
+    options.bodyPlan.addLegPair(root = Vec3(.2,-.2 - .15,-.3), rest = Vec3(1.3 * 1.1,.0,-1.6), createRobotSegments(segmentCount, 1.3 * .7 * segmentLength))
     applyMechanicalLegModel(options.bodyPlan)
     return options
 }

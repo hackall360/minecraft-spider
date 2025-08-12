@@ -49,10 +49,10 @@ class Spider(
     var isRotatingYaw = false
 //    var isRotatingPitch = false
 
-    val velocity = Vector(0.0, 0.0, 0.0)
+    var velocity = Vec3(0.0, 0.0, 0.0)
     val rotationalVelocity = Vector3f(0f,0f,0f)
 
-    fun accelerateRotation(axis: Vector, angle: Float) {
+    fun accelerateRotation(axis: Vec3, angle: Float) {
         val acceleration = Quaternionf().rotateAxis(angle, axis.toVector3f())
         val oldVelocity = Quaternionf().rotationYXZ(rotationalVelocity.y, rotationalVelocity.x, rotationalVelocity.z)
 
@@ -136,8 +136,7 @@ class Spider(
             return
         }
 
-        fun getPos(leg: Leg): Vector {
-//            if (leg.isOutsideTriggerZone) return leg.endEffector
+        fun getPos(leg: Leg): Vec3 {
             return leg.groundPosition ?: leg.restPosition
         }
 
@@ -146,16 +145,16 @@ class Spider(
         val backLeft  = getPos(body.legs.getOrNull(body.legs.size - 2) ?: return)
         val backRight = getPos(body.legs.getOrNull(body.legs.size - 1) ?: return)
 
-        val forwardLeft = frontLeft.clone().subtract(backLeft)
-        val forwardRight = frontRight.clone().subtract(backRight)
-        val forward = listOf(forwardLeft, forwardRight).average()
+        val forwardLeftVec = frontLeft.subtract(backLeft)
+        val forwardRightVec = frontRight.subtract(backRight)
+        val forward = listOf(forwardLeftVec, forwardRightVec).average()
 
-        val sideways = Vector(0.0,0.0,0.0)
+        var sideways = Vec3(0.0,0.0,0.0)
         for (i in 0 until body.legs.size step 2) {
             val left = body.legs.getOrNull(i) ?: continue
             val right = body.legs.getOrNull(i + 1) ?: continue
 
-            sideways.add(getPos(right).clone().subtract(getPos(left)))
+            sideways = sideways.add(getPos(right).subtract(getPos(left)))
         }
 
         preferredPitch = forward.getPitch().lerp(preferredPitch, gait.preferredRotationLerpFraction)

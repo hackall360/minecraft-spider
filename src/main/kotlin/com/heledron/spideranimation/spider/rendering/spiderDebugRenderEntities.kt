@@ -19,8 +19,8 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
         // Render scan bars
         if (spider.options.debug.scanBars) group.add("scanBar" to legIndex, lineRenderEntity(
             level = spider.world,
-            position = leg.scanStartPosition.toVec3(),
-            vector = leg.scanVector.toVec3(),
+            position = leg.scanStartPosition,
+            vector = leg.scanVector,
             thickness = .05f * scale,
             init = {
                 it.setBrightness(Brightness(15, 15))
@@ -34,7 +34,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
         // Render trigger zone
         if (spider.options.debug.triggerZones) group.add("triggerZoneVertical" to legIndex, blockRenderEntity(
             level = spider.world,
-            position = leg.triggerZone.center.toVec3(),
+            position = leg.triggerZone.center,
             init = {
                 it.setTeleportDuration(1)
                 it.setInterpolationDuration(1)
@@ -58,9 +58,9 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
         if (spider.options.debug.triggerZones) group.add("triggerZoneHorizontal" to legIndex, blockRenderEntity(
             level = spider.world,
             position = run {
-                val pos = leg.triggerZone.center.clone()
-                pos.y = leg.target.position.y.coerceIn(pos.y - leg.triggerZone.vertical, pos.y + leg.triggerZone.vertical)
-                pos.toVec3()
+                var pos = leg.triggerZone.center
+                pos = pos.setY(leg.target.position.y.coerceIn(pos.y - leg.triggerZone.vertical, pos.y + leg.triggerZone.vertical))
+                pos
             },
             init = {
                 it.setTeleportDuration(1)
@@ -85,7 +85,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
         // Render end effector
         if (spider.options.debug.endEffectors) group.add("endEffector" to legIndex, blockRenderEntity(
             level = spider.world,
-            position = leg.endEffector.toVec3(),
+            position = leg.endEffector,
             init = {
                 it.setTeleportDuration(1)
                 it.setBrightness(Brightness(15, 15))
@@ -105,7 +105,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
         // Render target position
         if (spider.options.debug.targetPositions) group.add("targetPosition" to legIndex, blockRenderEntity(
             level = spider.world,
-            position = leg.target.position.toVec3(),
+            position = leg.target.position,
             init = {
                 it.setTeleportDuration(1)
                 it.setBrightness(Brightness(15, 15))
@@ -185,8 +185,8 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
 
             group.add("polygon" to i, lineRenderEntity(
                 level = spider.world,
-                position = a.toVec3(),
-                vector = b.clone().subtract(a).toVec3(),
+                position = a,
+                vector = b.subtract(a),
                 thickness = .05f * scale,
                 interpolation = 0,
                 init = { it.setBrightness(Brightness(15, 15)) },
@@ -197,7 +197,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
 
     if (spider.options.debug.centreOfMass && normal.centreOfMass != null) group.add("centreOfMass", blockRenderEntity(
         level = spider.world,
-        position = normal.centreOfMass.toVec3(),
+        position = normal.centreOfMass,
         init = {
             it.setTeleportDuration(1)
             it.setBrightness(Brightness(15, 15))
@@ -214,8 +214,8 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
 
     if (spider.options.debug.normalForce && normal.centreOfMass != null && normal.origin !== null) group.add("acceleration", lineRenderEntity(
         level = spider.world,
-        position = normal.origin.toVec3(),
-        vector = normal.centreOfMass.clone().subtract(normal.origin).toVec3(),
+        position = normal.origin,
+        vector = normal.centreOfMass.subtract(normal.origin),
         thickness = .02f * scale,
         interpolation = 1,
         init = { it.setBrightness(Brightness(15, 15)) },

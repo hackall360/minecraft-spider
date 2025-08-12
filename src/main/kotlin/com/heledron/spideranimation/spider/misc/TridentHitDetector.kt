@@ -5,7 +5,6 @@ import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.EventEmitter
 import com.heledron.spideranimation.utilities.UP_VECTOR
 import com.heledron.spideranimation.utilities.runLater
-import com.heledron.spideranimation.utilities.toVector
 import net.minecraft.world.entity.projectile.ThrownTrident
 import net.minecraft.world.phys.AABB
 import org.joml.Vector3f
@@ -37,7 +36,7 @@ class TridentHitDetector(val spider: Spider): SpiderComponent {
                 trident.hasImpulse = true
                 onHit.emit()
 
-                spider.velocity.add(tridentDirection.scale(spider.gait.tridentKnockBack).toVector())
+                spider.velocity = spider.velocity.add(tridentDirection.scale(spider.gait.tridentKnockBack))
 
                 // apply rotational acceleration
                 val hitDirection = spider.position.subtract(trident.position()).normalize()
@@ -46,7 +45,7 @@ class TridentHitDetector(val spider: Spider): SpiderComponent {
 
                 val accelerationMagnitude = angle * spider.gait.tridentRotationalKnockBack.toFloat()
 
-                spider.accelerateRotation(axis.toVector(), accelerationMagnitude)
+                spider.accelerateRotation(axis, accelerationMagnitude)
             }
         }
     }
