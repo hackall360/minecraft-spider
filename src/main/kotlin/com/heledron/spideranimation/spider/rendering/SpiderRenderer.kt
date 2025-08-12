@@ -5,10 +5,12 @@ import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.interval
 import com.heledron.spideranimation.utilities.spawnParticle
-import org.bukkit.Color
-import org.bukkit.Location
-import org.bukkit.Particle
+import com.heledron.spideranimation.utilities.RGB
+import net.minecraft.core.particles.DustParticleOptions
+import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.world.level.Level
 import net.minecraft.world.phys.Vec3
+import org.joml.Vector3f
 import kotlin.random.Random
 
 class SpiderRenderer(val spider: Spider): SpiderComponent {
@@ -71,42 +73,43 @@ class SpiderRenderer(val spider: Spider): SpiderComponent {
     }
 }
 
-class SpiderParticleRenderer(val spider: Spider): SpiderComponent {
+class SpiderParticleRenderer(val spider: Spider) : SpiderComponent {
     override fun render() {
         renderSpider(spider)
     }
 
     companion object {
-        fun renderTarget(location: Location) {
-            spawnParticle(Particle.DUST, location, 1, 0.0, 0.0, 0.0, 0.0, Particle.DustOptions(Color.RED, 1f))
+        fun renderTarget(level: Level, position: Vec3) {
+            val colour = RGB(255, 0, 0)
+            val particle = DustParticleOptions(Vector3f(colour.r / 255f, colour.g / 255f, colour.b / 255f), 1f)
+            spawnParticle(level, particle, position, 1, 0.0, 0.0, 0.0, 0.0)
         }
 
         fun renderSpider(spider: Spider) {
             for (leg in spider.body.legs) {
-                val world = leg.spider.world
+                val level = leg.spider.world
                 val chain = leg.chain
-                var current = Location(world, chain.root.x, chain.root.y, chain.root.z)
+                var current = chain.root
 
                 for ((i, segment) in chain.segments.withIndex()) {
                     val thickness = (chain.segments.size - i - 1) * 0.025
-                    renderLine(current, segment.position, thickness)
-                    current = Location(world, segment.position.x, segment.position.y, segment.position.z)
+                    renderLine(level, current, segment.position, thickness)
+                    current = segment.position
                 }
             }
         }
 
-        fun renderLine(point1: Location, point2: Vec3, thickness: Double) {
+        fun renderLine(level: Level, point1: Vec3, point2: Vec3, thickness: Double) {
             val gap = .05
 
-            val startVec = Vec3(point1.x, point1.y, point1.z)
-            val amount = startVec.distanceTo(point2) / gap
-            val step = point2.subtract(startVec).scale(1 / amount)
+            val amount = point1.distanceTo(point2) / gap
+            val step = point2.subtract(point1).scale(1 / amount)
 
-            val current = point1.clone()
+            var current = point1
 
             for (i in 0..amount.toInt()) {
-                spawnParticle(Particle.BUBBLE, current, 1, thickness, thickness, thickness, 0.0)
-                current.add(step.x, step.y, step.z)
+                spawnParticle(level, ParticleTypes.BUBBLE, current, 1, thickness, thickness, thickness, 0.0)
+                current = current.add(step)
             }
         }
     }
