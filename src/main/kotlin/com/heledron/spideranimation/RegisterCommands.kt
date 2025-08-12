@@ -14,10 +14,8 @@ import net.minecraft.network.chat.Component
 import net.minecraftforge.event.RegisterCommandsEvent
 
 /**
- * Registers Brigadier command trees for the mod.  This replaces the previous
- * Bukkit style registration which relied on CommandSender and Player.  The
- * commands are now registered during [RegisterCommandsEvent] and operate using
- * [CommandSourceStack].
+ * Registers Brigadier command trees for the mod using Forge's
+ * [RegisterCommandsEvent]. Commands operate using [CommandSourceStack].
  */
 fun registerCommands(event: RegisterCommandsEvent) {
     val dispatcher: CommandDispatcher<CommandSourceStack> = event.dispatcher

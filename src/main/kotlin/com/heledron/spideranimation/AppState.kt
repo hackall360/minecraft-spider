@@ -37,8 +37,8 @@ object AppState {
     /**
      * Creates a new [Spider] in the given [level] at the specified [position].
      *
-     * Using [ServerLevel] and [Vec3] keeps this API in terms of native Minecraft
-     * types instead of Bukkit wrappers. The supplied [position] should represent
+     * Using [ServerLevel] and [Vec3] keeps this API in terms of native Minecraft/
+     * Forge types without relying on external server wrappers. The supplied [position] should represent
      * the ground location for the spider; this method adds the configured body
      * height so the spider's body rests above the terrain.
      *
