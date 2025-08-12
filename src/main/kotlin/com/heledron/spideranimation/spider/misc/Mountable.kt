@@ -2,7 +2,10 @@ package com.heledron.spideranimation.spider.misc
 
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
-import com.heledron.spideranimation.utilities.*
+import com.heledron.spideranimation.utilities.RenderEntity
+import com.heledron.spideranimation.utilities.SingleEntityRenderer
+import com.heledron.spideranimation.utilities.onServerTick
+import com.heledron.spideranimation.utilities.playSound
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.InteractionHand
@@ -127,13 +130,11 @@ class Mountable(val spider: Spider): SpiderComponent {
                 it.setNoPhysics(true)
                 it.setMarker(true)
             },
-            update = update@{
+            update = update@{ markerEntity ->
                 if (getRider() == null) return@update
 
-                // This is the only way to preserve passengers when teleporting.
-                // Paper has a TeleportFlag, but it is not supported by Spigot.
-                // https://jd.papermc.io/paper/1.21/io/papermc/paper/entity/TeleportFlag.EntityState.html
-                runCommandSilently("execute as ${it.uuid} at @s run tp ${markerLocation.x} ${markerLocation.y} ${markerLocation.z}")
+                // absMoveTo preserves passengers when teleporting.
+                markerEntity.absMoveTo(markerLocation.x, markerLocation.y, markerLocation.z)
             }
         ))
     }
