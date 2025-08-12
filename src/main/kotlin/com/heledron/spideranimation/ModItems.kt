@@ -111,9 +111,8 @@ class SwitchRendererItem(properties: Properties) : Item(properties) {
 
 class ToggleCloakItem(properties: Properties) : Item(properties) {
     override fun use(level: Level, player: ServerPlayer, hand: InteractionHand): InteractionResultHolder<ItemStack> {
-        if (!level.isClientSide) {
-            AppState.spider?.cloak?.toggleCloak()
-        }
+        if (level.isClientSide) return InteractionResultHolder.pass(player.getItemInHand(hand))
+        AppState.spider?.cloak?.toggleCloak()
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide)
     }
 }

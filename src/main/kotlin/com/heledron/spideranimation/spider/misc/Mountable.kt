@@ -34,6 +34,8 @@ class Mountable(val spider: Spider): SpiderComponent {
         val interactListener = object {
             @SubscribeEvent
             fun onInteract(event: PlayerInteractEvent.EntityInteract) {
+                if (event.entity.level().isClientSide) return
+
                 val pigEntity = pig.entity ?: return
                 if (event.target != pigEntity) return
                 if (event.hand != InteractionHand.MAIN_HAND) return
@@ -59,6 +61,7 @@ class Mountable(val spider: Spider): SpiderComponent {
         val mountListener = object {
             @SubscribeEvent
             fun onMount(event: EntityMountEvent) {
+                if (event.entityMounting.level().isClientSide) return
                 if (!event.isMounting) return
                 val pigEntity = pig.entity ?: return
                 if (event.entityBeingMounted != pigEntity) return
@@ -75,21 +78,19 @@ class Mountable(val spider: Spider): SpiderComponent {
         closable += onServerTick {
             val player = getRider() ?: return@onServerTick
 
-            var input = Vec3(0.0, 0.0, 0.0)
-            if (player.input.left) input = input.add(1.0, 0.0, 0.0)
-            if (player.input.right) input = input.add(-1.0, 0.0, 0.0)
-            if (player.input.up) input = input.add(0.0, 0.0, 1.0)
-            if (player.input.down) input = input.add(0.0, 0.0, -1.0)
+            var input = Vec3(player.xxa.toDouble(), 0.0, player.zza.toDouble())
 
-            val yaw = Math.toRadians(player.yRot.toDouble()).toFloat()
-            val rotation = Quaternionf().rotationYXZ(yaw, 0f, 0f)
-            val dirVec = if (input.lengthSqr() == 0.0) input else input.rotate(rotation).normalize()
+            if (input.lengthSqr() != 0.0) {
+                val yaw = Math.toRadians(player.yRot.toDouble()).toFloat()
+                val rotation = Quaternionf().rotationYXZ(yaw, 0f, 0f)
+                input = input.rotate(rotation).normalize()
+            }
 
             val look = player.lookAngle
             spider.behaviour = DirectionBehaviour(
                 spider,
                 Vector(look.x, look.y, look.z),
-                Vector(dirVec.x, dirVec.y, dirVec.z)
+                Vector(input.x, input.y, input.z)
             )
 
         }
