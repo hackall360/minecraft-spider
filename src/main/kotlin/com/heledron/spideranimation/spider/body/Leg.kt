@@ -5,8 +5,8 @@ import com.heledron.spideranimation.utilities.KinematicChain
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.configuration.LegPlan
 import com.heledron.spideranimation.utilities.*
-import org.bukkit.Location
-import org.bukkit.util.Vector
+import net.minecraft.core.BlockPos
+import net.minecraft.world.phys.Vec3
 import org.joml.Quaternionf
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -19,13 +19,13 @@ class Leg(
     lateinit var triggerZone: SplitDistanceZone; private set
     lateinit var comfortZone: SplitDistanceZone; private set
 
-    var groundPosition: Vector? = null; private set
-    lateinit var restPosition: Vector; private set
-    lateinit var lookAheadPosition: Vector; private set
-    lateinit var scanStartPosition: Vector; private set
-    lateinit var scanVector: Vector; private set
+    var groundPosition: Vec3? = null; private set
+    lateinit var restPosition: Vec3; private set
+    lateinit var lookAheadPosition: Vec3; private set
+    lateinit var scanStartPosition: Vec3; private set
+    lateinit var scanVector: Vec3; private set
 
-    lateinit var attachmentPosition: Vector; private set
+    lateinit var attachmentPosition: Vec3; private set
 
     init {
         updateMemo()
@@ -33,9 +33,9 @@ class Leg(
 
     // state
     var target = locateGround() ?: strandedTarget()
-    var endEffector = target.position.clone()
-    var previousEndEffector = endEffector.clone()
-    var chain = KinematicChain(Vector(0, 0, 0), listOf())
+    var endEffector = target.position
+    var previousEndEffector = endEffector
+    var chain = KinematicChain(Vec3(0.0, 0.0, 0.0), listOf())
 
     var touchingGround = true; private set
     var isMoving = false; private set
@@ -65,13 +65,14 @@ class Leg(
         val orientation = spider.gait.scanPivotMode.get(spider)
 
         val upVector = UP_VECTOR.rotate(orientation)
-        val scanStartAxis = upVector.clone().multiply(spider.lerpedGait.bodyHeight * 1.6)
-        val scanAxis = upVector.clone().multiply(-spider.lerpedGait.bodyHeight * 3.5)
+        val scanStartAxis = upVector.scale(spider.lerpedGait.bodyHeight * 1.6)
+        val scanAxis = upVector.scale(-spider.lerpedGait.bodyHeight * 3.5)
 
         // rest position
-        restPosition = legPlan.restPosition.clone()
-        restPosition.add(upVector.clone().multiply(-spider.lerpedGait.bodyHeight))
-        restPosition.rotate(orientation).add(spider.position)
+        restPosition = legPlan.restPosition
+            .add(upVector.scale(-spider.lerpedGait.bodyHeight))
+            .rotate(orientation)
+            .add(spider.position)
 
         // trigger zone
         triggerZone = SplitDistanceZone(restPosition, spider.lerpedGait.triggerZone)
@@ -79,8 +80,8 @@ class Leg(
         // comfort zone
         // we want the comfort zone to extend above the spider's body
         // and below the rest position
-        val comfortZoneCenter = restPosition.clone()
-        comfortZoneCenter.y = restPosition.y.lerp(spider.position.y, .5)
+        var comfortZoneCenter = restPosition
+        comfortZoneCenter = comfortZoneCenter.setY(restPosition.y.lerp(spider.position.y, .5))
         val comfortZoneSize = SplitDistance(
             horizontal = spider.gait.comfortZone.horizontal,
             vertical = spider.gait.comfortZone.vertical + (spider.position.y - restPosition.y).coerceAtLeast(.0)
@@ -91,11 +92,11 @@ class Leg(
         lookAheadPosition = lookAheadPosition(restPosition, triggerZone.size.horizontal)
 
         // scan
-        scanStartPosition = lookAheadPosition.clone().add(scanStartAxis)
+        scanStartPosition = lookAheadPosition.add(scanStartAxis)
         scanVector = scanAxis
 
         // attachment position
-        attachmentPosition = legPlan.attachmentPosition.clone().rotate(spider.orientation).add(spider.position)
+        attachmentPosition = legPlan.attachmentPosition.rotate(spider.orientation).add(spider.position)
     }
 
     fun update() {
@@ -105,7 +106,7 @@ class Leg(
     }
 
     private fun updateMovement() {
-        previousEndEffector = endEffector.clone()
+        previousEndEffector = endEffector
 
         val gait = spider.gait
         var didStep = false
@@ -129,32 +130,32 @@ class Leg(
 
         // inherit parent velocity
         if (!isGrounded()) {
-            endEffector.add(spider.velocity)
-            endEffector.rotateAroundY(spider.rotationalVelocity.y.toDouble(), spider.position)
+            endEffector = endEffector.add(spider.velocity)
+            endEffector = endEffector.rotateAroundY(spider.rotationalVelocity.y.toDouble(), spider.position)
         }
 
         // resolve ground collision
         if (!touchingGround) {
-            val collision = resolveCollision(endEffector.toLocation(spider.world), DOWN_VECTOR)
+            val collision = spider.world.resolveCollision(endEffector, DOWN_VECTOR)
             if (collision != null) {
                 didStep = true
                 touchingGround = true
-                endEffector.y = collision.position.y
+                endEffector = endEffector.setY(collision.position.y)
             }
         }
 
         if (isMoving) {
             val legMoveSpeed = gait.legMoveSpeed
 
-            endEffector.moveTowards(target.position, legMoveSpeed)
+            endEffector = endEffector.moveTowards(target.position, legMoveSpeed)
 
             val targetY = target.position.y + gait.legLiftHeight
-            val hDistance = endEffector.horizontalDistance(target.position)
-            if (hDistance > gait.legDropDistance) {
-                endEffector.y = endEffector.y.moveTowards(targetY, legMoveSpeed)
-            }
+                val hDistance = endEffector.horizontalDistance(target.position)
+                if (hDistance > gait.legDropDistance) {
+                    endEffector = endEffector.setY(endEffector.y.moveTowards(targetY, legMoveSpeed))
+                }
 
-            if (endEffector.distance(target.position) < 0.0001) {
+            if (endEffector.distanceTo(target.position) < 0.0001) {
                 isMoving = false
 
                 touchingGround = touchingGround()
@@ -178,17 +179,17 @@ class Leg(
             var stride = 0.0
             chain = KinematicChain(attachmentPosition, legPlan.segments.map {
                 stride += it.length
-                val position = spider.position.clone().add(legPlan.restPosition.clone().normalize().multiply(stride))
+                val position = spider.position.add(legPlan.restPosition.normalize().scale(stride))
                 ChainSegment(position, it.length, it.initDirection)
             })
         }
 
-        chain.root.copy(attachmentPosition)
+        chain.root = attachmentPosition
 
         if (spider.gait.straightenLegs) {
             val pivot = Quaternionf(spider.gait.legChainPivotMode.get(spider))
 
-            val direction = endEffector.clone().subtract(attachmentPosition)
+            val direction = endEffector.subtract(attachmentPosition)
             val rotation = direction.getRotationAroundAxis(pivot)
 
             rotation.x += spider.gait.legStraightenRotation
@@ -220,18 +221,18 @@ class Leg(
         return spider.world.isOnGround(endEffector, DOWN_VECTOR.rotate(spider.orientation))
     }
 
-    private fun lookAheadPosition(restPosition: Vector, triggerZoneRadius: Double): Vector {
+    private fun lookAheadPosition(restPosition: Vec3, triggerZoneRadius: Double): Vec3 {
         if (!spider.isWalking) return restPosition
 
-        val direction = if (spider.velocity.isZero) spider.forwardDirection() else spider.velocity.clone().normalize()
+        val direction = if (spider.velocity.isZero) spider.forwardDirection() else spider.velocity.normalize()
 
-        val lookAhead = direction.multiply(triggerZoneRadius * spider.gait.legLookAheadFraction).add(restPosition)
-        lookAhead.rotateAroundY(spider.rotationalVelocity.y.toDouble(), spider.position)
+        var lookAhead = direction.scale(triggerZoneRadius * spider.gait.legLookAheadFraction).add(restPosition)
+        lookAhead = lookAhead.rotateAroundY(spider.rotationalVelocity.y.toDouble(), spider.position)
         return lookAhead
     }
 
     private fun locateGround(): LegTarget? {
-        val lookAhead = lookAheadPosition.toLocation(spider.world)
+        val lookAhead = lookAheadPosition
         val scanLength = scanVector.length()
 
         fun candidateAllowed(id: Int): Boolean {
@@ -245,10 +246,10 @@ class Leg(
 
             if (!candidateAllowed(id)) return null
 
-            val start = Location(world, x, scanStartPosition.y, z)
-            val hit = raycastGround(start, scanVector, scanLength) ?: return null
+            val start = Vec3(x, scanStartPosition.y, z)
+            val hit = world.raycastGround(start, scanVector, scanLength) ?: return null
 
-            return LegTarget(position = hit.hitPosition, isGrounded = true, id = id)
+            return LegTarget(position = hit.location, isGrounded = true, id = id)
         }
 
         val x = scanStartPosition.x
@@ -276,14 +277,15 @@ class Leg(
             rayCast(px, nz), rayCast(px, z), rayCast(px, pz),
         )
 
-        val preferredPosition = lookAhead.toVector()
+        var preferredPosition = lookAhead
 
-        val frontBlock = lookAhead.clone().add(spider.forwardDirection().clone().multiply(1)).block
-        if (!frontBlock.isPassable) preferredPosition.y += spider.gait.legScanHeightBias
+        val frontBlock = lookAhead.add(spider.forwardDirection().scale(1.0))
+        val frontBlockPos = BlockPos(frontBlock.x.toInt(), frontBlock.y.toInt(), frontBlock.z.toInt())
+        if (!spider.world.getBlockState(frontBlockPos).isAir) preferredPosition = preferredPosition.setY(preferredPosition.y + spider.gait.legScanHeightBias)
 
         val best = candidates
             .filterNotNull()
-            .minByOrNull { it.position.distanceSquared(preferredPosition) }
+            .minByOrNull { it.position.distanceToSqr(preferredPosition) }
 
         if (best != null && !comfortZone.contains(best.position)) {
             return null
@@ -293,24 +295,24 @@ class Leg(
     }
 
     private fun strandedTarget(): LegTarget {
-        return LegTarget(position = lookAheadPosition.clone(), isGrounded = false, id = -1)
+        return LegTarget(position = lookAheadPosition, isGrounded = false, id = -1)
     }
 
     private fun disabledTarget(): LegTarget {
         val upVector = UP_VECTOR.rotate(spider.orientation)
 
         val target = strandedTarget()
-        target.position.add(upVector.clone().multiply(spider.lerpedGait.bodyHeight * .5))
+        target.position = target.position.add(upVector.scale(spider.lerpedGait.bodyHeight * .5))
 
         val minY = (groundPosition?.y ?: -Double.MAX_VALUE) + spider.lerpedGait.bodyHeight * .1
-        target.position.y = target.position.y.coerceAtLeast(minY)
+        target.position = target.position.setY(target.position.y.coerceAtLeast(minY))
 
         return target
     }
 }
 
 class LegTarget(
-    val position: Vector,
+    var position: Vec3,
     val isGrounded: Boolean,
     val id: Int,
 )

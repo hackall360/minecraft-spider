@@ -3,21 +3,21 @@ package com.heledron.spideranimation.spider.misc
 import com.heledron.spideranimation.spider.Spider
 import com.heledron.spideranimation.spider.SpiderComponent
 import com.heledron.spideranimation.utilities.*
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import kotlin.math.PI
 
 class StayStillBehaviour(val spider: Spider) : SpiderComponent {
     override fun update() {
-        spider.walkAt(Vector(0.0, 0.0, 0.0))
+        spider.walkAt(Vec3(0.0, 0.0, 0.0))
         spider.rotateTowards(spider.forwardDirection().setY(0.0))
     }
 }
 
-class TargetBehaviour(val spider: Spider, val target: Vector, val distance: Double) : SpiderComponent {
+class TargetBehaviour(val spider: Spider, val target: Vec3, val distance: Double) : SpiderComponent {
     override fun update() {
-        val direction = target.clone().subtract(spider.position).normalize()
+        val direction = target.subtract(spider.position).normalize()
         spider.rotateTowards(direction)
 
         val currentSpeed = spider.velocity.length()
@@ -27,23 +27,23 @@ class TargetBehaviour(val spider: Spider, val target: Vector, val distance: Doub
         val currentDistance = spider.position.horizontalDistance(target)
 
         if (currentDistance > distance + decelerateDistance) {
-            spider.walkAt(direction.clone().multiply(spider.gait.maxSpeed))
+            spider.walkAt(direction.scale(spider.gait.maxSpeed))
         } else {
-            spider.walkAt(Vector(0.0, 0.0, 0.0))
+            spider.walkAt(Vec3(0.0, 0.0, 0.0))
         }
     }
 }
 
-class DirectionBehaviour(val spider: Spider, val targetDirection: Vector, val walkDirection: Vector) : SpiderComponent {
+class DirectionBehaviour(val spider: Spider, val targetDirection: Vec3, val walkDirection: Vec3) : SpiderComponent {
     override fun update() {
         spider.rotateTowards(targetDirection)
-        spider.walkAt(walkDirection.clone().multiply(spider.gait.maxSpeed))
+        spider.walkAt(walkDirection.scale(spider.gait.maxSpeed))
     }
 }
 
 
 
-fun Spider.rotateTowards(targetVector: Vector) {
+fun Spider.rotateTowards(targetVector: Vec3) {
 //    val maxAcceleration = moveGait.rotateAcceleration * body.legs.filter { it.isGrounded() }.size / body.legs.size
 //    yawVelocity = yawVelocity.moveTowards(.0f, maxAcceleration)
 //    pitchVelocity = pitchVelocity.moveTowards(.0f, maxAcceleration)
@@ -83,17 +83,16 @@ fun Spider.rotateTowards(targetVector: Vector) {
     rotationalVelocity.moveTowards(conjugatedEuler, maxAcceleration)
 }
 
-fun Spider.walkAt(targetVelocity: Vector) {
-    val acceleration = gait.moveAcceleration// * body.legs.filter { it.isGrounded() }.size / body.legs.size
-    val target = targetVelocity.clone()
+fun Spider.walkAt(targetVelocity: Vec3) {
+    val acceleration = gait.moveAcceleration
+    var target = targetVelocity
 
-
-    if (body.legs.any { it.isUncomfortable && !it.isMoving }) { //  && !it.targetOutsideComfortZone
-        val scaled = target.setY(velocity.y).multiply(gait.uncomfortableSpeedMultiplier)
-        velocity.moveTowards(scaled, acceleration)
+    if (body.legs.any { it.isUncomfortable && !it.isMoving }) {
+        val scaled = Vec3(target.x, velocity.y, target.z).scale(gait.uncomfortableSpeedMultiplier)
+        velocity = velocity.moveTowards(scaled, acceleration)
         isWalking = targetVelocity.x != 0.0 && targetVelocity.z != 0.0
     } else {
-        velocity.moveTowards(target.setY(velocity.y), acceleration)
+        velocity = velocity.moveTowards(Vec3(target.x, velocity.y, target.z), acceleration)
         isWalking = velocity.x != 0.0 && velocity.z != 0.0
     }
 

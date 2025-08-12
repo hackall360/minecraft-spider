@@ -8,7 +8,7 @@ import com.heledron.spideranimation.utilities.spawnParticle
 import org.bukkit.Color
 import org.bukkit.Location
 import org.bukkit.Particle
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 import kotlin.random.Random
 
 class SpiderRenderer(val spider: Spider): SpiderComponent {
@@ -85,27 +85,28 @@ class SpiderParticleRenderer(val spider: Spider): SpiderComponent {
             for (leg in spider.body.legs) {
                 val world = leg.spider.world
                 val chain = leg.chain
-                var current = chain.root.toLocation(world)
+                var current = Location(world, chain.root.x, chain.root.y, chain.root.z)
 
                 for ((i, segment) in chain.segments.withIndex()) {
                     val thickness = (chain.segments.size - i - 1) * 0.025
                     renderLine(current, segment.position, thickness)
-                    current = segment.position.toLocation(world)
+                    current = Location(world, segment.position.x, segment.position.y, segment.position.z)
                 }
             }
         }
 
-        fun renderLine(point1: Location, point2: Vector, thickness: Double) {
+        fun renderLine(point1: Location, point2: Vec3, thickness: Double) {
             val gap = .05
 
-            val amount = point1.toVector().distance(point2) / gap
-            val step = point2.clone().subtract(point1.toVector()).multiply(1 / amount)
+            val startVec = Vec3(point1.x, point1.y, point1.z)
+            val amount = startVec.distanceTo(point2) / gap
+            val step = point2.subtract(startVec).scale(1 / amount)
 
             val current = point1.clone()
 
             for (i in 0..amount.toInt()) {
                 spawnParticle(Particle.BUBBLE, current, 1, thickness, thickness, thickness, 0.0)
-                current.add(step)
+                current.add(step.x, step.y, step.z)
             }
         }
     }

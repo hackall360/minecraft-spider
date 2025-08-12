@@ -158,7 +158,7 @@ class LaserPointerItem(properties: Properties) : Item(properties) {
             val directionVec = entity.lookAngle
             val result = level.raycastGround(eye, directionVec, 100.0)
             if (result == null) {
-                val direction = org.bukkit.util.Vector(directionVec.x, 0.0, directionVec.z).normalize()
+                val direction = Vec3(directionVec.x, 0.0, directionVec.z).normalize()
                 AppState.spider?.let { it.behaviour = DirectionBehaviour(it, direction, direction) }
                 AppState.chainVisualizer?.let {
                     it.target = null
@@ -171,7 +171,7 @@ class LaserPointerItem(properties: Properties) : Item(properties) {
                     it.target = targetVal
                     it.resetIterator()
                 }
-                AppState.spider?.let { it.behaviour = TargetBehaviour(it, targetVal.toVector(), it.lerpedGait.bodyHeight) }
+                AppState.spider?.let { it.behaviour = TargetBehaviour(it, targetVal, it.lerpedGait.bodyHeight) }
             }
         }
     }
@@ -184,7 +184,7 @@ class ComeHereItem(properties: Properties) : Item(properties) {
             AppState.spider?.let {
                 val height = if (it.gait.straightenLegs) it.lerpedGait.bodyHeight * 2.0 else it.lerpedGait.bodyHeight * 5.0
                 val eye = entity.eyePosition
-                it.behaviour = TargetBehaviour(it, org.bukkit.util.Vector(eye.x, eye.y, eye.z), height)
+                it.behaviour = TargetBehaviour(it, Vec3(eye.x, eye.y, eye.z), height)
             }
         }
     }

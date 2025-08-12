@@ -3,19 +3,19 @@ package com.heledron.spideranimation.spider.configuration
 import com.heledron.spideranimation.spider.presets.AnimatedPalettes
 import com.heledron.spideranimation.spider.presets.SpiderTorsoModels
 import com.heledron.spideranimation.utilities.DisplayModel
-import org.bukkit.util.Vector
+import net.minecraft.world.phys.Vec3
 
 class SegmentPlan(
     var length: Double,
-    var initDirection: Vector,
+    var initDirection: Vec3,
     var model: DisplayModel = DisplayModel(listOf())
 ) {
     fun clone() = SegmentPlan(length, initDirection.clone(), model.clone())
 }
 
 class LegPlan(
-    var attachmentPosition: Vector,
-    var restPosition: Vector,
+    var attachmentPosition: Vec3,
+    var restPosition: Vec3,
     var segments: List<SegmentPlan>,
 )
 
@@ -32,8 +32,8 @@ class BodyPlan {
         this.scale *= scale
         bodyModel.scale(scale.toFloat())
         legs.forEach {
-            it.attachmentPosition.multiply(scale)
-            it.restPosition.multiply(scale)
+            it.attachmentPosition = it.attachmentPosition.scale(scale)
+            it.restPosition = it.restPosition.scale(scale)
             it.segments.forEach { segment ->
                 segment.length *= scale
                 segment.model.scale(scale.toFloat())

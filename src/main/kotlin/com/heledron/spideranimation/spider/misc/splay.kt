@@ -2,6 +2,7 @@ package com.heledron.spideranimation.spider.misc
 
 import com.heledron.spideranimation.AppState
 import com.heledron.spideranimation.utilities.*
+import net.minecraft.world.phys.Vec3
 import org.bukkit.entity.BlockDisplay
 import org.bukkit.util.Transformation
 import org.joml.Quaternionf
@@ -55,7 +56,7 @@ fun splay() {
     }
 
     for ((i, entity) in entities.withIndex().shuffled()) {
-        val offset = entity.location.toVector().subtract(spider.position)
+        val offset = Vec3(entity.location.x, entity.location.y, entity.location.z).subtract(spider.position)
 
         // normalize position
         entity.teleportDuration = 0
