@@ -150,23 +150,4 @@ class Cloak(var  spider: Spider) : SpiderComponent {
             cloakGlitching = false
         }
     }
-
-
-//    val transitioning = ArrayList<Any>()
-//    fun transitionSegmentBlock(id: Any, waitTime: Int, glitchTime: Int, newBlock: Material?) {
-//        if (transitioning.contains(id)) return
-//        transitioning.add(id)
-//
-//        val scheduler = SeriesScheduler()
-//        scheduler.sleep(waitTime.toLong())
-//        scheduler.run {
-//            cloakOverride[id] = Material.GRAY_GLAZED_TERRACOTTA.createBlockData()
-//        }
-//
-//        scheduler.sleep(glitchTime.toLong())
-//        scheduler.run {
-//            cloakColor[id] = newBlock
-//            transitioning.remove(id)
-//        }
-//    }
 }
