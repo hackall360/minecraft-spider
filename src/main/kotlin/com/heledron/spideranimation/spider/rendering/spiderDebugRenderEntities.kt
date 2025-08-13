@@ -178,7 +178,7 @@ fun spiderDebugRenderEntities(spider: Spider): RenderEntityGroup {
 
     val normal = spider.body.normal ?: return group
     if (spider.options.debug.legPolygons && normal.contactPolygon != null) {
-        val points = normal.contactPolygon//.map { it.toLocation(spider.world)}
+        val points = normal.contactPolygon
         for (i in points.indices) {
             val a = points[i]
             val b = points[(i + 1) % points.size]
