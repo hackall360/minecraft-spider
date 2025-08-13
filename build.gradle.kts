@@ -19,16 +19,6 @@ minecraft {
     mappings("official", "1.20.1")
 
     runs {
-        create("client") {
-            workingDirectory(project.file("run"))
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.logging.console.level", "debug")
-            mods {
-                create("spideranimation") {
-                    source(sourceSets.main.get())
-                }
-            }
-        }
         create("server") {
             workingDirectory(project.file("run"))
             property("forge.logging.markers", "REGISTRIES")
