@@ -7,6 +7,7 @@ import net.minecraft.world.entity.Display.TextDisplay
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.Vec3
 import org.joml.Matrix4f
 import java.io.Closeable
@@ -110,6 +111,22 @@ fun textRenderEntity(
     update = {
         it.setText(Component.literal(text))
         update(it)
+    },
+)
+
+/** Create a simple marker [BlockDisplay] at the given [position]. */
+fun vec3MarkerRenderEntity(
+    level: Level,
+    position: Vec3,
+) = blockRenderEntity(
+    level = level,
+    position = position,
+    init = {
+        it.blockState = Blocks.REDSTONE_BLOCK.defaultBlockState()
+        it.setTeleportDuration(1)
+        it.setInterpolationDuration(1)
+        it.setBrightness(Brightness(15, 15))
+        it.transformation = centredTransform(.25f, .25f, .25f)
     },
 )
 
