@@ -87,8 +87,27 @@ class Spider(
     }
 
     fun teleport(newPosition: Vec3) {
+        val displacement = newPosition.subtract(position)
         position = newPosition
-        // TODO update leg positions for new coordinate system
+
+        for (leg in body.legs) {
+            leg.groundPosition = leg.groundPosition?.add(displacement)
+            leg.restPosition = leg.restPosition.add(displacement)
+            leg.lookAheadPosition = leg.lookAheadPosition.add(displacement)
+            leg.scanStartPosition = leg.scanStartPosition.add(displacement)
+            leg.attachmentPosition = leg.attachmentPosition.add(displacement)
+            leg.triggerZone = SplitDistanceZone(leg.triggerZone.center.add(displacement), leg.triggerZone.size)
+            leg.comfortZone = SplitDistanceZone(leg.comfortZone.center.add(displacement), leg.comfortZone.size)
+
+            leg.target.position = leg.target.position.add(displacement)
+            leg.endEffector = leg.endEffector.add(displacement)
+            leg.previousEndEffector = leg.previousEndEffector.add(displacement)
+
+            leg.chain.root = leg.chain.root.add(displacement)
+            leg.chain.segments.forEach { it.position = it.position.add(displacement) }
+        }
+
+        renderer.render()
     }
 
     fun getComponents() = iterator<SpiderComponent> {
