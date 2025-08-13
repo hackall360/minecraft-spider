@@ -3,6 +3,8 @@ package com.heledron.spideranimation
 import com.heledron.spideranimation.kinematic_chain_visualizer.KinematicChainVisualizer
 import com.heledron.spideranimation.spider.misc.StayStillBehaviour
 import com.heledron.spideranimation.utilities.AppState
+import com.heledron.spideranimation.utilities.RenderEntityGroup
+import com.heledron.spideranimation.utilities.vec3MarkerRenderEntity
 import com.heledron.spideranimation.ModItems
 import com.heledron.spideranimation.registerCommands
 import net.minecraftforge.common.MinecraftForge
@@ -74,9 +76,11 @@ class SpiderAnimationMod {
         // Render target marker if one is set
         val target = if (AppState.miscOptions.showLaser) AppState.target else null
         if (target != null) {
-            // TODO: restore target rendering once a Vec3-based renderer is available.
-            // The previous implementation used a Location type from another server API;
-            // a Forge-friendly Vec3 renderer has not yet been written, so no marker is drawn.
+            val level = event.server.overworld()
+            val group = RenderEntityGroup().apply {
+                add(0, vec3MarkerRenderEntity(level, target))
+            }
+            AppState.renderer.render("target", group)
         }
 
         AppState.chainVisualizer?.render()
