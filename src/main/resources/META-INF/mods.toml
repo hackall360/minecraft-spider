@@ -5,6 +5,7 @@ license="MIT"
 modId="spideranimation"
 version="3.0"
 displayName="Spider Animation"
+displayTest="IGNORE_ALL_VERSION"
 credits=""
 authors="Heledron"
 description='''
