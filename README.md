@@ -30,10 +30,11 @@ The Spider Animation mod runs entirely on the server. Clients can join with vani
 ## Commands
 Autocomplete will show available options.
 
-Get control items:
+Get placeholder control tools (vanilla items with custom names):
 ```
 /items
 ```
+These tools use existing vanilla items (sticks, shears, etc.) to control the spider.
 
 Load preset:
 ```

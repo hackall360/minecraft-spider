@@ -3,6 +3,7 @@ package com.heledron.spideranimation
 import com.heledron.spideranimation.spider.misc.splay
 import com.heledron.spideranimation.spider.presets.*
 import com.heledron.spideranimation.utilities.runLater
+import com.heledron.spideranimation.ControlItem
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -20,10 +21,29 @@ import net.minecraftforge.event.RegisterCommandsEvent
 fun registerCommands(event: RegisterCommandsEvent) {
     val dispatcher: CommandDispatcher<CommandSourceStack> = event.dispatcher
 
+    registerItems(dispatcher)
     registerScale(dispatcher)
     registerPreset(dispatcher)
     registerFall(dispatcher)
     registerSplay(dispatcher)
+}
+
+private fun registerItems(dispatcher: CommandDispatcher<CommandSourceStack>) {
+    dispatcher.register(
+        Commands.literal("items")
+            .requires { it.hasPermission(2) }
+            .executes { ctx ->
+                val player = ctx.source.playerOrException
+                for (tool in ControlItem.entries) {
+                    val stack = tool.createStack()
+                    if (!player.addItem(stack)) {
+                        player.drop(stack, false)
+                    }
+                }
+                ctx.source.sendSuccess({ Component.literal("Gave control items") }, false)
+                1
+            }
+    )
 }
 
 private fun registerScale(dispatcher: CommandDispatcher<CommandSourceStack>) {

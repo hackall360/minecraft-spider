@@ -5,7 +5,6 @@ import com.heledron.spideranimation.spider.misc.StayStillBehaviour
 import com.heledron.spideranimation.utilities.AppState
 import com.heledron.spideranimation.utilities.RenderEntityGroup
 import com.heledron.spideranimation.utilities.vec3MarkerRenderEntity
-import com.heledron.spideranimation.ModItems
 import com.heledron.spideranimation.registerCommands
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.RegisterCommandsEvent
@@ -30,8 +29,8 @@ class SpiderAnimationMod {
         val bus = FMLJavaModLoadingContext.get().modEventBus
         bus.addListener(this::commonSetup)
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SpiderConfig.SPEC)
-        ModItems.ITEMS.register(bus)
         MinecraftForge.EVENT_BUS.register(this)
+        MinecraftForge.EVENT_BUS.register(ControlItemEvents)
     }
 
     private val closeables = mutableListOf<Closeable>()
