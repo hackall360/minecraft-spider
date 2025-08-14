@@ -53,7 +53,7 @@ dependencies {
     minecraft("net.minecraftforge:forge:1.20.1-47.3.0")
     implementation(kotlin("stdlib"))
     implementation("com.google.code.gson:gson:2.10.1")
-    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit5"))
 }
 
 tasks.test {
