@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT"
 [[mods]]
 modId="spideranimation"
-version="3.0"
+version="${version}"
 displayName="Spider Animation"
 displayTest="IGNORE_ALL_VERSION"
 credits=""
