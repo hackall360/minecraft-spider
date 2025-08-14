@@ -4,8 +4,10 @@ plugins {
     id("net.minecraftforge.gradle") version "[6.0,6.2)"
 }
 
+val modVersion: String by project
+
 group = "com.heledron"
-version = "3.0-SNAPSHOT"
+version = modVersion
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
@@ -55,6 +57,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.processResources {
+    inputs.property("version", modVersion)
+    filesMatching("META-INF/mods.toml") {
+        expand("version" to modVersion)
+    }
 }
 
 sourceSets.main.get().resources.srcDir("src/generated/resources")
