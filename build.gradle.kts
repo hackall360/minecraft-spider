@@ -1,7 +1,7 @@
 plugins {
     java
     kotlin("jvm") version "1.9.24"
-    id("net.minecraftforge.gradle") version "[6.0,6.2)"
+    id("net.minecraftforge.gradle") version "6.0.43"
 }
 
 val modVersion: String by project
