@@ -139,7 +139,7 @@ class SpiderBody(val spider: Spider): SpiderComponent {
                 origin = origin,
                 centreOfMass = centreOfMass,
                 contactPolygon = legsPolygon
-            ).apply { applyStabilization(this) }
+            )
         }
 
         val polygon2D = legsPolygon.map { Vector2d(it.x, it.z) }
@@ -160,23 +160,7 @@ class SpiderBody(val spider: Spider): SpiderComponent {
             origin = origin,
             centreOfMass = centreOfMass,
             contactPolygon = legsPolygon
-        ).apply { applyStabilization(this )}
-    }
-
-    private fun applyStabilization(normal: NormalInfo) {
-        if (normal.origin == null) return
-        if (normal.centreOfMass == null) return
-
-        val origin = normal.origin!!
-        val centre = normal.centreOfMass!!
-        if (origin.horizontalDistance(centre) < spider.gait.polygonLeeway) {
-            normal.origin = Vec3(centre.x, origin.y, centre.z)
-        }
-
-        val stabilizationTarget = origin.setY(centre.y)
-        normal.centreOfMass = centre.lerp(stabilizationTarget, spider.gait.stabilizationFactor)
-
-        normal.normal = normal.centreOfMass!!.subtract(normal.origin!!).normalize()
+        )
     }
 }
 

@@ -45,7 +45,6 @@ class Gait(
             uncomfortableSpeedMultiplier = .6
             samePairCooldown = 2
             crossPairCooldown = 4
-            polygonLeeway = .5
         }
     }
 
@@ -107,10 +106,6 @@ class Gait(
     var crossPairCooldown = 1
 
     var useLegacyNormalForce = false
-    var polygonLeeway = .0
-    
-    // TODO: Consider removing this
-    var stabilizationFactor = .0 //0.7
 
     var uncomfortableSpeedMultiplier = 0.0
 
