@@ -44,7 +44,9 @@ minecraft {
 }
 
 repositories {
-    mavenLocal()
+    if (project.hasProperty("useMavenLocal")) {
+        mavenLocal()
+    }
     mavenCentral()
     maven("https://maven.minecraftforge.net")
 }
