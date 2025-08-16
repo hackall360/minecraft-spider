@@ -113,9 +113,10 @@ Copy block examples used in the video:
 ```
 
 ## Development
-1. Clone or download the repo.
-2. Run `./gradlew build` to compile the mod. The resulting JAR will be in `build/libs`.
-3. For convenience, set up a symlink and add the link to the server `mods` folder.
+1. Install JDK 17 and ensure it is the active Java version (`java -version` should report 17).
+2. Clone or download the repo.
+3. Run `./gradlew build` to compile the mod. The resulting JAR will be in `build/libs`.
+4. For convenience, set up a symlink and add the link to the server `mods` folder.
    - Windows: `mklink /D newFile.jar originalFile.jar`
    - Mac/Linux: `ln -s originalFile.jar newFile.jar`
 
