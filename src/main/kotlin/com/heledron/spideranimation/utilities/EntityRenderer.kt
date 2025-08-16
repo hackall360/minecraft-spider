@@ -222,6 +222,11 @@ class MultiEntityRenderer : Closeable {
     private val groups = mutableMapOf<Any, GroupEntityRenderer>()
     private val used = mutableSetOf<Any>()
 
+    val rendered: Map<Any, Entity>
+        get() = groups.flatMap { (id, grp) ->
+            grp.rendered.map { id to it.value }
+        }.toMap()
+
     /** Render the given [group] associated with [id]. */
     fun render(id: Any, group: RenderEntityGroup) {
         val renderer = groups.getOrPut(id) { GroupEntityRenderer() }
