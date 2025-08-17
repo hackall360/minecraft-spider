@@ -123,11 +123,10 @@ class Spider(
 
     fun update() {
         updatePreferredAngles()
-        for (component in getComponents()) {
-            updateLerpedGait()
-            component.update()
-        }
-        for (component in getComponents()) component.render()
+        updateLerpedGait()
+        val components = getComponents().asSequence().toList()
+        for (component in components) component.update()
+        for (component in components) component.render()
     }
 
     private fun updateLerpedGait() {
